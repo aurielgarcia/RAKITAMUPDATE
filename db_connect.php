@@ -1,8 +1,8 @@
 <?php
-$servername = "AE-D-J6HLW34\SQLEXPRESS"; // Double backslash is correct
-$username = "admin";                        // Make sure this user exists and has access
-$password = "Password@12345678";              // Replace with your actual password
-$database = "itequip_inventory";         // Your actual DB name
+$servername = "AE-L-9CQ4TQ3\\SQLEXPRESS"; // Double backslash is correct
+$username   = "admin";                     // SQL login username
+$password   = "Password@12345678";        // SQL login password
+$database   = "itequip_inventory";        // Your database name
 
 // Connect to SQL Server
 $conn = sqlsrv_connect($servername, array(
@@ -14,6 +14,8 @@ $conn = sqlsrv_connect($servername, array(
 
 // Check connection
 if ($conn === false) {
-    die(print_r(sqlsrv_errors(), true));
+    die("Connection failed: " . print_r(sqlsrv_errors(), true));
+} else {
+    // Connection successful
 }
 ?>

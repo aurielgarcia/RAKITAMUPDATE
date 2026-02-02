@@ -241,7 +241,9 @@ $params_update = array(
             <option value="">-- Select User --</option>
             <option value="Ralph Carlo Sevilla">Ralph Carlo Sevilla</option>
             <option value="Julieben Labrada">Julieben Labrada</option>
-            <option value="Samuel Reinoso Jr.">Samuel Reinoso Jr.</option>
+            <option value="Gilbert Bautista">Gilbert Bautista</option>
+            <option value="Auriel Garcia">Auriel Garcia</option>
+            <option value="Therrence SeracCatalan">Therrence SeracCatalan</option>
         </select>
 
         <label for="deployed_date">Deployed Date</label>

@@ -112,6 +112,18 @@ if (!isset($_SESSION['username'])) {
       z-index: 9999;
     }
 
+    .user {
+      position: fixed;
+      top: 20px;
+      right: 100px;
+      color: #d9534f;
+      padding: 10px 15px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      z-index: 9999;
+    }
+
     .logout:hover {
       background: #c9302c;
     }
@@ -135,6 +147,7 @@ if (!isset($_SESSION['username'])) {
 <div id="particles-js"></div>
 
 <div class="content">
+  <a href="main_menu.php" class="user">Name</a>
   <a href="logout.php" class="logout">Logout</a>
   <h1>VERTIV GULF<br>IT MANAGEMENT SYSTEM</h1>
 

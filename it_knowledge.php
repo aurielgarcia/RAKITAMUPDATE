@@ -19,6 +19,7 @@ if ($stmt === false) {
     <link rel="icon" type="image/png" href="favicon.jpg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet">
     <style>
         /* Base Layout */
         html, body {
@@ -92,16 +93,38 @@ if ($stmt === false) {
             text-align: left;
         }
 
-        .col-action {
+        .col-action, .col-actiondata {
+            display: flex;
+            justify-content: center; /* Centers icons horizontally */
+            align-items: center;     /* Centers icons vertically */
+            gap: 8px;
             text-align: center;
         }
+
         .col-createdby{
             text-align: left;
         }
 
+        .btn-actionedit, .btn-actionview {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px; /* Added a little padding for a better click area */
+        border: 1px solid #2c3e50;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #2c3e50;
+        transition: all 0.3s;
+        }
+
+        .btn-actionview:hover, .btn-actionedit:hover {
+            background: #2c3e50;
+            color: white;
+        }
+
         .btn-action {
             display: inline-block;
-            padding: 8px 15px;
+            padding: 2px 2px;
             border: 1px solid #2c3e50;
             border-radius: 4px;
             text-decoration: none;
@@ -175,14 +198,13 @@ if ($stmt === false) {
     <img src="images/vertiv-logo1.png" alt="Vertiv Logo" class="logo">
     <hr class="sidebar-divider">
     <a href=""><i class="material-icons">home</i> Main Menu</a>
-    <a href=""><i class="material-icons">arrow_right</i> IT Knowledge Based</a>
-    <a href="#" style="background-color: #1a1a1a;"><i class="material-icons">description</i> Knowledge Based</a>
+    <a href="it_knowledge.php" style="background-color: #1a1a1a;"><i class="material-symbols-outlined">cognition_2</i> Knowledge Based</a>
     <a href="logout.php" class="logout-link"><i class="material-icons">logout</i> Logout</a>
 </div>
 
 <div class="main-content">
     <div class="header-section">
-        <h2 class="tab-header">Knowledge Base Directory</h2>
+        <h2 class="tab-header">Knowledge Based Directory</h2>
     </div>
 
     <div class="utility-bar">
@@ -229,8 +251,11 @@ if ($stmt === false) {
                 <div class="col-createdby">
                     <p class="resource-snippet"><?php echo htmlspecialchars($row['createdby']); ?></p>
                 </div>
-                <div class="col-action">
-                    <a href="<?php echo htmlspecialchars($row['pdfurl']); ?>" target="_blank" class="btn-action">View Details</a>
+                <div class="col-actiondata">
+                    <a href="<?php echo htmlspecialchars($row['pdfurl']); ?>" target="_blank" class="btn-actionview">
+                        <span class="material-icons">visibility</span></a>
+                    <a href="<?php echo htmlspecialchars($row['pdfurl']); ?>" target="_blank" class="btn-actionedit">
+                        <span class="material-icons">edit</span></a>
                 </div>
             </div>
             <?php } ?>

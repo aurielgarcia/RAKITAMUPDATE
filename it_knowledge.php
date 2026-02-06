@@ -89,13 +89,14 @@ if ($stmt === false) {
         .col-date {
             color: #7f8c8d;
             font-size: 14px;
+            text-align: left;
         }
 
         .col-action {
             text-align: center;
         }
         .col-createdby{
-            text-align: center;
+            text-align: left;
         }
 
         .btn-action {
@@ -157,7 +158,7 @@ if ($stmt === false) {
 
         #resourceSearch {
             padding: 11px 15px 11px 40px;
-            border: 1px solid #dcdde1;
+            border: 2px solid #dcdde1;
             border-radius: 8px;
             width: 300px;
             outline: none;
@@ -166,15 +167,6 @@ if ($stmt === false) {
 
         #resourceSearch:focus { border-color: #3498db; }
 
-        .filter-select {
-            padding: 10px 15px;
-            border: 1px solid #dcdde1;
-            border-radius: 8px;
-            background: white;
-            color: #2c3e50;
-            cursor: pointer;
-            outline: none;
-        }
     </style>
 </head>
 <body>
@@ -184,7 +176,7 @@ if ($stmt === false) {
     <hr class="sidebar-divider">
     <a href=""><i class="material-icons">home</i> Main Menu</a>
     <a href=""><i class="material-icons">arrow_right</i> IT Knowledge Based</a>
-    <a href="#" style="background-color: #1a1a1a;"><i class="material-icons">description</i> Knowledge Base</a>
+    <a href="#" style="background-color: #1a1a1a;"><i class="material-icons">description</i> Knowledge Based</a>
     <a href="logout.php" class="logout-link"><i class="material-icons">logout</i> Logout</a>
 </div>
 
@@ -205,11 +197,6 @@ if ($stmt === false) {
                 <span class="search-icon">🔍</span>
                 <input type="text" id="resourceSearch" placeholder="Search by title or description...">
             </div>
-            <select class="filter-select">
-                <option value="all">All Dates</option>
-                <option value="recent">Last 30 Days</option>
-                <option value="old">Older</option>
-            </select>
         </div>
     </div>
     

@@ -27,14 +27,12 @@ if ($stmt === false) {
             padding: 0;
             overflow-y: auto;
         }
-        /* Container for the whole table */
         .directory-table {
             display: flex;
             flex-direction: column;
             width: 100%;
         }
 
-        /* Defining the main row grid */
         .grid-row {
             display: grid;
             grid-template-columns: 1fr 150px 150px 150px;
@@ -44,9 +42,7 @@ if ($stmt === false) {
             transition: background 0.3s;
         }
 
-        .grid-row:hover {
-            background: #d7d7d75d;
-        }
+        .grid-row:hover { background: #d7d7d75d; }
 
         .grid-row.header {
             background-color: #f8f9fa;
@@ -56,7 +52,6 @@ if ($stmt === false) {
             font-size: 12px;
         }
 
-        /* Inner Grid for the Icon + Text alignment */
         .inner-grid {
             display: grid;
             grid-template-columns: 50px 1fr;
@@ -95,45 +90,30 @@ if ($stmt === false) {
 
         .col-action, .col-actiondata {
             display: flex;
-            justify-content: center; /* Centers icons horizontally */
-            align-items: center;     /* Centers icons vertically */
+            justify-content: center;
+            align-items: center;
             gap: 8px;
             text-align: center;
         }
 
-        .col-createdby{
-            text-align: left;
-        }
+        .col-createdby { text-align: left; }
 
+        /* Updated button style to match your original link design */
         .btn-actionedit, .btn-actionview {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 5px; /* Added a little padding for a better click area */
-        border: 1px solid #2c3e50;
-        border-radius: 4px;
-        text-decoration: none;
-        color: #2c3e50;
-        transition: all 0.3s;
-        }
-
-        .btn-actionview:hover, .btn-actionedit:hover {
-            background: #2c3e50;
-            color: white;
-        }
-
-        .btn-action {
-            display: inline-block;
-            padding: 2px 2px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
             border: 1px solid #2c3e50;
             border-radius: 4px;
             text-decoration: none;
             color: #2c3e50;
-            font-size: 13px;
-            font-weight: 600;
+            background: none;
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
-        .btn-action:hover {
+        .btn-actionview:hover, .btn-actionedit:hover {
             background: #2c3e50;
             color: white;
         }
@@ -164,8 +144,6 @@ if ($stmt === false) {
         .btn-add:hover { background-color: #1a252f; }
         .plus-icon { margin-right: 8px; font-size: 18px; }
 
-        .right-actions { display: flex; gap: 10px; }
-
         .search-wrapper {
             position: relative;
             display: flex;
@@ -189,7 +167,6 @@ if ($stmt === false) {
         }
 
         #resourceSearch:focus { border-color: #3498db; }
-
     </style>
 </head>
 <body>
@@ -213,7 +190,6 @@ if ($stmt === false) {
                 <span class="plus-icon">+</span> Add New Resource
             </button>
         </div>
-        
         <div class="right-actions">
             <div class="search-wrapper">
                 <span class="search-icon">🔍</span>
@@ -232,10 +208,14 @@ if ($stmt === false) {
             </div>
 
             <?php 
-            // Loop through each database record
             while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) { 
-                // Format the date for cleaner display
                 $displayDate = $row['date'] ? $row['date']->format('M d, Y') : 'N/A';
+                $rowData = json_encode([
+                    'id' => $row['id'],
+                    'title' => $row['title'],
+                    'description' => $row['description'],
+                    'createdby' => $row['createdby']
+                ]);
             ?>
             <div class="grid-row">
                 <div class="col-main">
@@ -253,19 +233,21 @@ if ($stmt === false) {
                 </div>
                 <div class="col-actiondata">
                     <a href="<?php echo htmlspecialchars($row['pdfurl']); ?>" target="_blank" class="btn-actionview">
-                        <span class="material-icons">visibility</span></a>
-                    <a href="<?php echo htmlspecialchars($row['pdfurl']); ?>" target="_blank" class="btn-actionedit">
-                        <span class="material-icons">edit</span></a>
+                        <span class="material-icons">visibility</span>
+                    </a>
+                    <button type="button" class="btn-actionedit" 
+                            onclick='openEditModal(<?php echo htmlspecialchars($rowData, ENT_QUOTES, "UTF-8"); ?>)'>
+                        <span class="material-icons">edit</span>
+                    </button>
                 </div>
             </div>
             <?php } ?>
-
         </div>
     </div>
 </div>
 
 <?php include('it_knowledge_add.php'); ?>
-
+<?php include('it_knowledge_edit.php'); ?> 
 <script>
     function openModal() {
         const modal = document.getElementById('addResourceModal');
@@ -277,9 +259,27 @@ if ($stmt === false) {
         if(modal) { modal.style.display = 'none'; }
     }
 
+    function openEditModal(data) {
+        const modal = document.getElementById('editResourceModal');
+        if(modal) {
+            document.getElementById('edit_id').value = data.id;
+            document.getElementById('edit_title').value = data.title;
+            document.getElementById('edit_description').value = data.description;
+            document.getElementById('edit_created_by').value = data.createdby;
+            modal.style.display = 'flex';
+        }
+    }
+
+    function closeEditModal() {
+        const modal = document.getElementById('editResourceModal');
+        if(modal) { modal.style.display = 'none'; }
+    }
+
     window.onclick = function(event) {
-        const modal = document.getElementById('addResourceModal');
-        if (event.target == modal) { closeModal(); }
+        const addModal = document.getElementById('addResourceModal');
+        const editModal = document.getElementById('editResourceModal');
+        if (event.target == addModal) { closeModal(); }
+        if (event.target == editModal) { closeEditModal(); }
     }
 
     document.getElementById('resourceSearch').addEventListener('keyup', function() {
@@ -291,6 +291,5 @@ if ($stmt === false) {
         });
     });
 </script>
-
 </body>
 </html>

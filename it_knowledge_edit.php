@@ -1,14 +1,17 @@
 <?php
 include('db_connect.php');
 
-if (isset($_POST['edit_resource'])) {
+// Change: Check for 'id' instead to be safer for both AJAX and Form posts
+if (isset($_POST['id'])) {
     $id = $_POST['id'];
     $title = $_POST['title'];
     $description = $_POST['description'];
     $createdby = $_POST['created_by'];
 
+    $response = array('success' => false, 'message' => '');
+
     if (!empty($_FILES['pdf_file']['name'])) {
-        // 1. Fetch the OLD file path first
+        // 1. Fetch the OLD file path
         $oldFileSql = "SELECT pdfurl FROM it_knowledge WHERE id = ?";
         $oldFileStmt = sqlsrv_query($conn, $oldFileSql, array($id));
         $oldRow = sqlsrv_fetch_array($oldFileStmt, SQLSRV_FETCH_ASSOC);
@@ -17,28 +20,44 @@ if (isset($_POST['edit_resource'])) {
         // 2. Process the NEW file
         $fileName = $_FILES['pdf_file']['name'];
         $uniqueName = time() . "_" . $fileName;
-        $physicalPath = __DIR__ . DIRECTORY_SEPARATOR . "uploads" . DIRECTORY_SEPARATOR . $uniqueName;
-        $dbPath = "uploads/" . $uniqueName;
+        
+        // Use a consistent directory separator
+        $uploadDir = "uploads";
+        if (!is_dir($uploadDir)) { mkdir($uploadDir, 0777, true); }
+
+        $physicalPath = __DIR__ . DIRECTORY_SEPARATOR . $uploadDir . DIRECTORY_SEPARATOR . $uniqueName;
+        $dbPath = $uploadDir . "/" . $uniqueName;
 
         if (move_uploaded_file($_FILES['pdf_file']['tmp_name'], $physicalPath)) {
-            // 3. Update the database with the new path
+            // 3. Update with new path
             $tsql = "UPDATE it_knowledge SET title = ?, description = ?, createdby = ?, pdfurl = ? WHERE id = ?";
             $params = array($title, $description, $createdby, $dbPath, $id);
             
-            // 4. Delete the old physical file if it exists
-            if ($oldFilePath && file_exists(__DIR__ . DIRECTORY_SEPARATOR . $oldFilePath)) {
-                unlink(__DIR__ . DIRECTORY_SEPARATOR . $oldFilePath);
+            // 4. Delete the old physical file
+            if ($oldFilePath && file_exists(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $oldFilePath))) {
+                unlink(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $oldFilePath));
             }
         }
     } else {
-        // No new file uploaded, just update text fields
+        // No new file, update text only
         $tsql = "UPDATE it_knowledge SET title = ?, description = ?, createdby = ? WHERE id = ?";
         $params = array($title, $description, $createdby, $id);
     }
 
     $stmt = sqlsrv_query($conn, $tsql, $params);
+    
     if ($stmt) {
-        echo "<script>window.location.href='it_knowledge.php?edit=success';</script>";
+        // If it's a standard form post:
+        if (!isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+            echo "<script>window.location.href='it_knowledge.php?edit=success';</script>";
+            exit();
+        } else {
+            // If it's an AJAX call:
+            echo json_encode(array('success' => true));
+            exit();
+        }
+    } else {
+        echo json_encode(array('success' => false, 'message' => sqlsrv_errors()));
         exit();
     }
 }

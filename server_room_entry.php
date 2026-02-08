@@ -354,6 +354,7 @@
     <img src="images/vertiv-logo1.png" alt="Vertiv Logo" class="logo">
     <hr class="sidebar-divider">
     <a href="main_menu.php"><i class="material-icons">home</i> Main Menu</a>
+    <a href="server_room_entry.php" style="background-color: #1a1a1a;"><i class="material-icons">arrow_right</i> Server Room Entry</a>
     <a href="logout.php" class="logout-link"><i class="material-icons">logout</i> Logout</a>
 </div>
 
@@ -379,7 +380,7 @@
         <table id="stagingTable">
             <thead>
                 <tr>
-                    <th>#</th>
+                    <th>No.</th>
                     <th>Date</th>
                     <th>Time In</th>
                     <th>Time Out</th>
@@ -514,7 +515,7 @@ function createTableRow(data, index) {
     row.dataset.id = data.id; 
 
     row.innerHTML = `
-        <td><span class="id-badge">${data.id}</span></td>
+        <td><span class="id-badge">${index + 1}</span></td>
         <td><strong>${data.entry_date}</strong></td>
         <td>${formatTime12h(data.entry_time)}</td>
         <td>${formatTime12h(data.exit_time)}</td>

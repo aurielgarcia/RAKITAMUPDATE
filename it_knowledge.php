@@ -26,11 +26,15 @@ if ($stmt === false) {
             margin: 0;
             padding: 0;
             overflow-y: auto;
+            background-color: #ffffff;
         }
         .directory-table {
+            background: white;
             display: flex;
             flex-direction: column;
             width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
 
         .grid-row {
@@ -174,7 +178,7 @@ if ($stmt === false) {
 <div class="sidebar">
     <img src="images/vertiv-logo1.png" alt="Vertiv Logo" class="logo">
     <hr class="sidebar-divider">
-    <a href=""><i class="material-icons">home</i> Main Menu</a>
+    <a href="main_menu.php"><i class="material-icons">home</i> Main Menu</a>
     <a href="it_knowledge.php" style="background-color: #1a1a1a;"><i class="material-symbols-outlined">cognition_2</i> Knowledge Based</a>
     <a href="logout.php" class="logout-link"><i class="material-icons">logout</i> Logout</a>
 </div>

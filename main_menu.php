@@ -4,6 +4,9 @@ if (!isset($_SESSION['username'])) {
     header("Location: index.html");
     exit;
 }
+
+$username = $_SESSION['username']; // Get the logged-in user
+
 ?>
 
 <!DOCTYPE html>
@@ -98,20 +101,7 @@ if (!isset($_SESSION['username'])) {
       border-radius: 10px;
       margin-bottom: 10px;
     }
-
-    .logout {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #d9534f;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 6px;
-      text-decoration: none;
-      font-weight: bold;
-      z-index: 9999;
-    }
-
+    
     .user {
       position: fixed;
       top: 20px;
@@ -124,9 +114,52 @@ if (!isset($_SESSION['username'])) {
       z-index: 9999;
     }
 
-    .logout:hover {
-      background: #c9302c;
+    /* EDIT NEW */
+
+    .user-profile {
+      margin-right: 20px;
+      font-weight: 600;
+      color: var(--text-dark);
+      background: white;
+      padding: 8px 15px;
+      border-radius: 50px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      font-size: 0.9rem;
     }
+
+    /* Top Navigation Bar */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 15px 40px;
+      z-index: 1000;
+      box-sizing: border-box;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+    }
+
+    .logout-btn {
+      background: #d9534f;
+      color: white;
+      padding: 8px 20px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: var(--transition);
+      box-shadow: 0 4px 10px rgba(217, 83, 79, 0.3);
+    }
+
+    .logout-btn:hover {
+      background: #c9302c;
+      transform: translateY(-2px); 
+    }
+
+    /*----------*/ 
 
     @media (max-width: 600px) {
       .menu-box {
@@ -146,9 +179,11 @@ if (!isset($_SESSION['username'])) {
 
 <div id="particles-js"></div>
 
+  <header class="top-bar">
+  <a href="logout.php" class="logout-btn">Logout</a>
+  </header>
+
 <div class="content">
-  <a href="main_menu.php" class="user">Name</a>
-  <a href="logout.php" class="logout">Logout</a>
   <h1>VERTIV GULF<br>IT MANAGEMENT SYSTEM</h1>
 
   <div class="menu-boxes">
@@ -191,6 +226,17 @@ if (!isset($_SESSION['username'])) {
       <img src="images/wifi_accom.jpg" alt="WIFI Accommodation User Management & Records">
       WIFI ACCOMMODATION USER MANAGEMENT & RECORDS
     </a>
+
+    <a href="server_room_entry.php" class="menu-box">
+      <img src="images/server_room_entry.jpg" alt="Server Room">
+      SERVER ROOM ENTRY REGISTER
+    </a>
+
+    <a href="it_knowledge.php" class="menu-box">
+      <img src="images/knowledge_based.png" alt="IT Knowledge">
+      IT KNOWLEDGE BASED
+    </a>
+    
   </div>
 </div>
 

@@ -180,6 +180,7 @@ $username = $_SESSION['username']; // Get the logged-in user
 <div id="particles-js"></div>
 
   <header class="top-bar">
+  <user class="user-profile"><?php echo htmlspecialchars($username); ?></user>
   <a href="logout.php" class="logout-btn">Logout</a>
   </header>
 

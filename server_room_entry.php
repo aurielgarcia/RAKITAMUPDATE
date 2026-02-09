@@ -346,6 +346,29 @@
 
         #resourceSearch:focus { border-color: #3498db; }
 
+    .form-select-authorizedby {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid #dfe6e9;
+    border-radius: 8px;
+    background-color: white;
+    font-family: inherit;
+    color: #2c3e50;
+    cursor: pointer;
+    appearance: none; /* Removes default browser arrow */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+    margin-bottom: 20px;
+    }
+
+    .form-select-authorizedby:focus {
+        border-color: #2c3e50;
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(44, 62, 80, 0.05);
+    }
+
     </style>
 </head>
 <body>
@@ -426,7 +449,14 @@
       <input type="text" name="purpose" placeholder="e.g. Server Maintenance" required>
 
       <label>Authorized By</label>
-      <input type="text" name="authorized_by" placeholder="Supervisor Name" required>
+        <select name="authorized_by" class="form-select-authorizedby" required>
+            <option value="" disabled selected>Select Supervisor Name</option>
+            <option value="Therrence Serac Catalan">Therrence Serac Catalan</option>
+            <option value="Gilbert Bautista">Gilbert Bautista</option>
+            <option value="Auriel Garcia">Auriel Garcia</option>
+            <option value="Julieben Labrada">Julieben Labrada</option>
+            <option value="Ralph Carlo Sevilla">Ralph Carlo Sevilla</option>
+        </select>
 
       <button type="submit" class="save-btn">Save Entry</button>
     </form>
@@ -464,7 +494,14 @@
       <input type="text" name="purpose" required>
 
       <label>Authorized By</label>
-      <input type="text" name="authorized_by" required>
+        <select name="authorized_by" class="form-select-authorizedby" required>
+            <option value="" disabled selected>Select Supervisor Name</option>
+            <option value="Therrence Serac Catalan">Therrence Serac Catalan</option>
+            <option value="Gilbert Bautista">Gilbert Bautista</option>
+            <option value="Auriel Garcia">Auriel Garcia</option>
+            <option value="Julieben Labrada">Julieben Labrada</option>
+            <option value="Ralph Carlo Sevilla">Ralph Carlo Sevilla</option>
+        </select>
 
       <button type="submit" class="save-btn">Update Entry</button>
     </form>

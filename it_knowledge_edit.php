@@ -89,6 +89,7 @@ if (isset($_POST['id'])) {
                 <div class="form-group">
                     <label>Created By</label>
                     <select name="created_by" id="edit_created_by" required class="form-select-createdby">
+                        <option value="" disabled selected>Select Author</option>
                         <option value="Therrence Serac Catalan">Therrence Serac Catalan</option>
                         <option value="Gilbert Bautista">Gilbert Bautista</option>
                         <option value="Auriel Garcia">Auriel Garcia</option>

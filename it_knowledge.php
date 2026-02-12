@@ -2,7 +2,7 @@
 include('db_connect.php');
 
 // Fetch all resources from the database
-$tsql = "SELECT * FROM it_knowledge ORDER BY id DESC";
+$tsql = "SELECT * FROM it_knowledge ORDER BY title ASC";
 $stmt = sqlsrv_query($conn, $tsql);
 
 if ($stmt === false) {

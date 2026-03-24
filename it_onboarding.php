@@ -307,7 +307,11 @@
     <span class="close" onclick="closeModal('editJoinerModal')">&times;</span>
     <h2>Edit Joiner</h2>
     <form id="editJoinerForm">
-      <input type="hidden" name="employee_id">
+
+      <input type="hidden" name="id">
+      
+      <label>Employee ID:</label>
+      <input type="text" name="employee_id" required style="text-align:center;">
 
       <label>Full Name:</label>
       <input type="text" name="name" required style="text-align:center;">
@@ -521,12 +525,17 @@ row.querySelector('.cancelled-btn').addEventListener('click', () => {
     const confirmCancel = confirm("Are you sure you want to cancel this joiner? This will delete the record.");
     if (!confirmCancel) return;
 
-    const employee_id = row.cells[1].textContent; // Assuming employee_id is in the second cell
+    const id = row.dataset.id; // ✅ USE ID INSTEAD
+
+    if (!id || id === "undefined") {
+        alert("Error: Missing ID. Please reload the page.");
+        return;
+    }
 
     fetch('delete_it_onboarding.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employee_id })
+        body: JSON.stringify({ id: parseInt(id) }) // ✅ SEND ID
     })
     .then(res => res.json())
     .then(result => {
@@ -547,6 +556,9 @@ row.querySelector('.cancelled-btn').addEventListener('click', () => {
   // Edit
   row.querySelector('.edit-btn').addEventListener('click', () => {
     const form = document.getElementById('editJoinerForm');
+
+    form.id.value = row.dataset.id; // ✅ ADD THIS LINE (VERY IMPORTANT)
+
     form.employee_id.value = row.cells[1].textContent;
     form.name.value = row.cells[0].textContent;
     form.role.value = row.cells[2].textContent;
@@ -556,6 +568,7 @@ row.querySelector('.cancelled-btn').addEventListener('click', () => {
     form.snow_ticket.value = row.cells[6].textContent;
     form.pc_type.value = row.cells[7].textContent;
     form.onboarding_status.value = row.cells[8].textContent;
+
     document.getElementById('editJoinerModal').style.display = 'block';
   });
 }

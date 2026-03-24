@@ -8,6 +8,10 @@ $response = ['success' => false, 'message' => ''];
 try {
     if(!$joiner) throw new Exception('No joiner data provided.');
 
+    if (!isset($joiner['id']) || empty($joiner['id'])) {
+    throw new Exception('Missing ID for update.');
+}
+
     $sqlUpdate = "UPDATE dbo.it_onboarding 
               SET employee_id = ?, name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?, snow_ticket = ?, pc_type = ?, onboarding_status = ?, updated_at = GETDATE()
               WHERE id = ?";

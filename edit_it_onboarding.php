@@ -9,10 +9,11 @@ try {
     if(!$joiner) throw new Exception('No joiner data provided.');
 
     $sqlUpdate = "UPDATE dbo.it_onboarding 
-                  SET name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?, snow_ticket = ?, pc_type = ?, onboarding_status = ?
-                  WHERE employee_id = ?";
+                SET employee_id = ?, name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?, snow_ticket = ?, pc_type = ?, onboarding_status = ?
+                WHERE id = ?";
 
     $params = [ 
+        $joiner['employee_id'],
         $joiner['name'],
         $joiner['role'],
         $joiner['department'],
@@ -21,7 +22,7 @@ try {
         $joiner['snow_ticket'],
         $joiner['pc_type'],
         $joiner['onboarding_status'],
-        $joiner['employee_id'],
+        $joiner['id'], // ✅ THIS IS THE FIX
     ];
 
     $stmt = sqlsrv_query($conn, $sqlUpdate, $params);

@@ -372,7 +372,6 @@ window.onclick = e => {
 // ----- CREATE TABLE ROW -----
 function createTableRow(data) {
   const row = document.createElement('tr');
-  row.setAttribute('data-id', data.id);
   row.innerHTML = `
     <td>${data.name}</td>
     <td>${data.employee_id}</td>
@@ -470,17 +469,7 @@ row.querySelector('.onboarded-btn').addEventListener('click', () => {
   const confirmOnboard = confirm("Are you sure you want to Onboard this new joiner?");
     if (!confirmOnboard) return;
 
-    // Use .dataset.id to get the value from data-id
-    const db_id = row.dataset.id; 
-
-    // Add a quick check to stop if the ID is missing
-    if (!db_id) {
-        alert("Error: Missing ID. Please refresh the page.");
-        return;
-    }
-
     const data = {
-        id: row.getAttribute('data-id'),
         name: row.cells[0].textContent,
         employee_id: row.cells[1].textContent,
         role: row.cells[2].textContent,
@@ -515,16 +504,12 @@ row.querySelector('.cancelled-btn').addEventListener('click', () => {
     const confirmCancel = confirm("Are you sure you want to cancel this joiner? This will delete the record.");
     if (!confirmCancel) return;
 
-    const db_id = row.getAttribute('data-id');
+    const employee_id = row.cells[1].textContent; // Assuming employee_id is in the second cell
 
-    if (!db_id) {
-        alert("Error: ID not found. Please refresh the page.");
-        return;
-    }
     fetch('delete_it_onboarding.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: db_id })
+        body: JSON.stringify({ employee_id })
     })
     .then(res => res.json())
     .then(result => {
@@ -545,7 +530,6 @@ row.querySelector('.cancelled-btn').addEventListener('click', () => {
   // Edit
   row.querySelector('.edit-btn').addEventListener('click', () => {
     const form = document.getElementById('editJoinerForm');
-    form.id.value = row.getAttribute('data-id');
     form.employee_id.value = row.cells[1].textContent;
     form.name.value = row.cells[0].textContent;
     form.role.value = row.cells[2].textContent;

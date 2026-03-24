@@ -18,8 +18,8 @@ try {
     // ✅ 1. Update dbo.it_onboarding to Onboarded
     $sqlUpdate = "UPDATE dbo.it_onboarding
                   SET onboarding_status = 'Onboarded'
-                  WHERE id = ?";
-    $stmtUpdate = sqlsrv_query($conn, $sqlUpdate, [$joiner['id']]);
+                  WHERE employee_id = ?";
+    $stmtUpdate = sqlsrv_query($conn, $sqlUpdate, [$joiner['employee_id']]);
     if ($stmtUpdate === false) {
         $errors = sqlsrv_errors();
         throw new Exception('Update it_onboarding failed: ' . json_encode($errors, JSON_PRETTY_PRINT));
@@ -48,7 +48,7 @@ try {
     if ($row['cnt'] > 0) {
         // Update
         $sqlUpdateProfile = "UPDATE itequip_inventory.users_profile
-                             SET name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?, status = 'Active'
+                             SET name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?
                              WHERE employee_id = ?";
         $params = [
             $joiner['name'],
@@ -66,8 +66,8 @@ try {
     } else {
         // Insert
         $sqlInsertProfile = "INSERT INTO itequip_inventory.users_profile
-            (employee_id, name, role, department, manager_name, joining_date, status)
-            VALUES (?, ?, ?, ?, ?, ?, 'Active')";
+            (employee_id, name, role, department, manager_name, joining_date)
+            VALUES (?, ?, ?, ?, ?, ?)";
         $params = [
             $joiner['employee_id'],
             $joiner['name'],

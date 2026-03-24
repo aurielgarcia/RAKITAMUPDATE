@@ -47,7 +47,7 @@ try {
     if ($row['cnt'] > 0) {
 
         $sqlUpdateProfile = "UPDATE itequip_inventory.users_profile
-                             SET employee_id = ?, name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?
+                             SET employee_id = ?, name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?, status = 'Active'
                              WHERE id = ?";
 
         $params = [
@@ -69,8 +69,8 @@ try {
     } else {
 
         $sqlInsertProfile = "INSERT INTO itequip_inventory.users_profile
-            (employee_id, name, role, department, manager_name, joining_date)
-            VALUES (?, ?, ?, ?, ?, ?)";
+            (employee_id, name, role, department, manager_name, joining_date, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'Active')";
 
         $params = [
             $joiner['employee_id'],

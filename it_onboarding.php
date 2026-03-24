@@ -498,7 +498,8 @@ row.querySelector('.onboarded-btn').addEventListener('click', () => {
         manager_name: row.cells[4].textContent,
         joining_date: row.cells[5].textContent,
         snow_ticket: row.cells[6].textContent,
-        pc_type: row.cells[7].textContent
+        pc_type: row.cells[7].textContent,
+        onboarding_status: row.cells[8].textContent // Add this line
     };
     fetch('onboard_joiner.php', {
         method: 'POST',

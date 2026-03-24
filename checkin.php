@@ -1,7 +1,7 @@
 <?php
+session_start();
 include('db_connect.php');
 
-// Fetch existing equipment names
 $equipment_names = [];
 $equipment_query = "SELECT DISTINCT name FROM itequip_inventory.equipment ORDER BY name ASC";
 $equipment_result = sqlsrv_query($conn, $equipment_query);
@@ -10,6 +10,8 @@ if ($equipment_result !== false) {
         $equipment_names[] = $row['name'];
     }
 }
+
+$error_display = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $name = $_POST['name'] === 'other' ? $_POST['custom_name'] : $_POST['name'];
@@ -20,10 +22,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $quantity_delivered = (int)$_POST['quantity_delivered'];
     $status = $_POST['status'];
     $supplier = $_POST['supplier'];
+    $site_location = $_POST['site_location'];
+    $storage_location = $_POST['storage_location'];
+    $checked_by = $_SESSION['name'] ?? 'System';
 
-    // Check if equipment with both name AND model exists
-    $check_sql = "SELECT id, stock_quantity FROM itequip_inventory.equipment WHERE name = ? AND model = ?";
-    $check_stmt = sqlsrv_query($conn, $check_sql, [$name, $model]);
+    $equipment_id = null;
+
+    $check_sql = "SELECT id, stock_quantity FROM itequip_inventory.equipment 
+                  WHERE name = ? AND model = ? AND site_location = ? AND storage_location = ?";
+    $check_stmt = sqlsrv_query($conn, $check_sql, [$name, $model, $site_location, $storage_location]);
 
     if ($check_stmt && sqlsrv_has_rows($check_stmt)) {
         $row = sqlsrv_fetch_array($check_stmt, SQLSRV_FETCH_ASSOC);
@@ -34,44 +41,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $update_sql = "UPDATE itequip_inventory.equipment SET stock_quantity = ?, status = ? WHERE id = ?";
         sqlsrv_query($conn, $update_sql, [$new_stock_quantity, $new_status, $equipment_id]);
     } else {
-        // Insert new equipment
-        $insert_equipment_sql = "INSERT INTO itequip_inventory.equipment (name, model, storage_location, stock_quantity, status)
-                                 VALUES (?, ?, 'Default Location', ?, 'Available')";
-        sqlsrv_query($conn, $insert_equipment_sql, [$name, $model, $quantity_delivered]);
-
-        // Get newly inserted equipment ID
-        $get_id_sql = "SELECT id FROM itequip_inventory.equipment WHERE name = ? AND model = ?";
-        $get_id_stmt = sqlsrv_query($conn, $get_id_sql, [$name, $model]);
-        $row = sqlsrv_fetch_array($get_id_stmt, SQLSRV_FETCH_ASSOC);
-        $equipment_id = $row['id'];
+        $insert_equipment_sql = "INSERT INTO itequip_inventory.equipment (name, model, site_location, storage_location, stock_quantity, status, checked_by)
+                                 OUTPUT INSERTED.id
+                                 VALUES (?, ?, ?, ?, ?, 'Available', ?)";
+        
+        $resource = sqlsrv_query($conn, $insert_equipment_sql, [$name, $model, $site_location, $storage_location, $quantity_delivered, $checked_by]);
+        
+        if ($resource && $row = sqlsrv_fetch_array($resource, SQLSRV_FETCH_ASSOC)) {
+            $equipment_id = $row['id'];
+        } else {
+            $errors = sqlsrv_errors();
+            $error_msg = $errors ? $errors[0]['message'] : "Unknown error during equipment creation.";
+            $error_display .= "<div class='error-banner'>Database Error (Equipment Table): " . htmlspecialchars($error_msg) . "</div>";
+        }
     }
 
-    // Insert check-in record
-    $insert_checkin_sql = "INSERT INTO itequip_inventory.checkins 
-        (equipment_id, name, model, order_date, quantity_ordered, delivery_date, quantity_delivered, status, supplier)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $params = [$equipment_id, $name, $model, $order_date, $quantity_ordered, $delivery_date, $quantity_delivered, $status, $supplier];
+    if ($equipment_id) {
+        $insert_checkin_sql = "INSERT INTO itequip_inventory.checkins 
+            (equipment_id, name, model, order_date, quantity_ordered, delivery_date, quantity_delivered, checked_by, status, supplier, site_location, storage_location)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $params = [$equipment_id, $name, $model, $order_date, $quantity_ordered, $delivery_date, $quantity_delivered, $checked_by, $status, $supplier, $site_location, $storage_location];
 
-    $insert_result = sqlsrv_query($conn, $insert_checkin_sql, $params);
+        $insert_result = sqlsrv_query($conn, $insert_checkin_sql, $params);
 
-    if ($insert_result) {
-    echo "<script>
-        alert('IT Equipment Stock Check-in successful!');
-        window.location.href = 'checkin.php';
-    </script>";
-} else {
-    $errors = sqlsrv_errors();
-    echo "<p class='error-message'>Error inserting record: " . $errors[0]['message'] . "</p>";
-}
+        if ($insert_result) {
+            echo "<script>
+                alert('IT Equipment Stock Check-in successful!');
+                window.location.href = 'checkin.php';
+            </script>";
+        } else {
+            $errors = sqlsrv_errors();
+            $error_display .= "<div class='error-banner'>Error inserting history record: " . htmlspecialchars($errors[0]['message']) . "</div>";
+        }
+    } else if ($_SERVER["REQUEST_METHOD"] == "POST" && empty($error_display)) {
+        $error_display .= "<div class='error-banner'>Error: Could not identify or create the equipment record ID. Please check database permissions.</div>";
+    }
 }
 ?>
 
-<!-- HTML BELOW REMAINS MOSTLY UNCHANGED -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>IT Equipment Stock Check-in | VERTIV GULF LLC ITMS ITMS</title>
+    <title>IT Equipment Stock Check-in | VERTIV GULF LLC ITMS</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/png" href="favicon.jpg">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -106,13 +118,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             width: 100%;
             max-width: 400px;
             border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .error-container {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 10px;
+            z-index: 2;
+        }
+
+        .error-banner {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         form {
-            background: rgba(152, 199, 246, 0.6);;;
-            margin: 20px auto;
+            background: rgba(152, 199, 246, 0.6);
+            margin: 0 auto 20px;
             max-width: 500px;
             width: 100%;
+            padding: 20px;
+            border-radius: 12px;
         }
 
         label {
@@ -130,6 +164,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin-bottom: 12px;
             border-radius: 8px;
             font-size: 14px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
         }
 
         input:focus, select:focus {
@@ -145,7 +181,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            width: 30%;
+            width: 50%;
             margin: 20px auto 0;
             display: block;
             transition: background 0.3s ease;
@@ -154,15 +190,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .btn:hover {
             background-color: rgb(4, 115, 15);
         }
-
-        #name option,
-        #model option,
-        #status option,
-        #supplier option {
-    text-align: left;
-        }
     </style>
-    </head>
+</head>
 <body>
 
 <div id="particles-js"></div>
@@ -178,6 +207,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <div class="main-content">
     <div class="tab-header">IT Equipment Stock Check-in</div>
+
+    <?php if (!empty($error_display)): ?>
+        <div class="error-container">
+            <?= $error_display; ?>
+        </div>
+    <?php endif; ?>
 
     <form action="checkin.php" method="POST">
         <label for="name">Item Description:</label>
@@ -211,7 +246,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <label for="status">Status:</label>
         <select name="status" id="status" style="text-align:center; text-align-last:center;">
             <option value="" style="text-align:center;">-- Select Status --</option>
-            <option value="Complete" >Complete</option>
+            <option value="Complete">Complete</option>
             <option value="Incomplete">Incomplete</option>
         </select>
 
@@ -229,9 +264,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <option value="Trade Aid Computers LLC.">Trade Aid Computers LLC.</option>
             <option value="Jumaira Bookshop">Jumaira Bookshop</option>
             <option value="Sixth Gen Trading LLC.">Sixth Gen Trading LLC.</option>
+            <option value="Stocks Adjustment">Stocks Adjustment</option>
         </select>
 
-        <button type="submit" class="btn">Submit</button>
+        <label for="site_location">Site Location:</label>
+        <select name="site_location" id="site_location" onchange="updateStorageLocations()" required style="text-align:center; text-align-last:center;">
+            <option value="" style="text-align: center;">-- Select Site Location --</option>
+            <option value="Al Ghail">Al Ghail</option>
+            <option value="Al Hamra">Al Hamra</option>
+        </select>
+
+        <label for="storage_location">Storage Location:</label>
+        <select name="storage_location" id="storage_location" required style="text-align:center; text-align-last:center;">
+            <option value="" style="text-align: center;">-- Select Site First --</option>
+        </select>
+
+        <button type="submit" class="btn">Submit Check-in</button>
     </form>
 </div>
 
@@ -245,19 +293,15 @@ function toggleCustomName() {
     if (nameSelect.value === 'other') {
         customNameInput.style.display = 'block';
         customNameInput.required = true;
-
         modelDropdown.style.display = 'none';
         modelDropdown.required = false;
-
         customModelInput.style.display = 'block';
         customModelInput.required = true;
     } else {
         customNameInput.style.display = 'none';
         customNameInput.required = false;
-
         modelDropdown.style.display = 'block';
         modelDropdown.required = true;
-
         customModelInput.style.display = 'none';
         customModelInput.required = false;
 
@@ -267,6 +311,38 @@ function toggleCustomName() {
                 modelDropdown.innerHTML = data;
             });
     }
+}
+
+function updateStorageLocations() {
+    const site = document.getElementById('site_location').value;
+    const storageDropdown = document.getElementById('storage_location');
+    
+    storageDropdown.innerHTML = '<option value="">-- Select Storage Location --</option>';
+
+    const ghailLocations = [
+        "I.T. Department Main Building",
+        "Stock Room Main Building",
+        "Stock Room IMS Building"
+    ];
+
+    const hamraLocations = [
+        "I.T. Department Main Building",
+        "Storage Room"
+    ];
+
+    let options = [];
+    if (site === "Al Ghail") {
+        options = ghailLocations;
+    } else if (site === "Al Hamra") {
+        options = hamraLocations;
+    }
+
+    options.forEach(loc => {
+        const opt = document.createElement('option');
+        opt.value = loc;
+        opt.textContent = loc;
+        storageDropdown.appendChild(opt);
+    });
 }
 </script>
 

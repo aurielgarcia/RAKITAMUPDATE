@@ -1,8 +1,8 @@
 <?php
+session_start();
 include 'db_connect.php';
 
-// Fetch toner/drum check-in records from SQL Server
-$sql = "SELECT model, order_date, quantity_ordered, delivery_date, quantity_delivered, status, supplier, color, type 
+$sql = "SELECT model, order_date, quantity_ordered, delivery_date, quantity_delivered, site_location, storage_location, checked_by, status, supplier, color, type 
         FROM itequip_inventory.toner_drum_checkin 
         ORDER BY delivery_date DESC";
 $stmt = sqlsrv_query($conn, $sql);
@@ -70,7 +70,9 @@ $stmt = sqlsrv_query($conn, $sql);
         table#equipmentTable td:nth-child(7),
         table#equipmentTable th:nth-child(8),
         table#equipmentTable th:nth-child(9),
-        table#equipmentTable td:nth-child(9) {
+        table#equipmentTable th:nth-child(10),
+        table#equipmentTable th:nth-child(11),
+        table#equipmentTable td:nth-child(12) {
             text-align: center;
         }
 
@@ -82,18 +84,20 @@ $stmt = sqlsrv_query($conn, $sql);
 
         th:nth-child(1), td:nth-child(1) { width: 10%; }
         th:nth-child(2), td:nth-child(2) { width: 10%; }
-        th:nth-child(3), td:nth-child(3) { width: 10%; }
-        th:nth-child(4), td:nth-child(4) { width: 12%; }
-        th:nth-child(5), td:nth-child(5) { width: 8%; }
-        th:nth-child(6), td:nth-child(6) { width: 12%; }
-        th:nth-child(7), td:nth-child(7) { width: 8%; }
-        th:nth-child(8), td:nth-child(8) { width: 8%; }
-        th:nth-child(9), td:nth-child(9) { width: 10%; }
+        th:nth-child(3), td:nth-child(3) { width: 5%; }
+        th:nth-child(4), td:nth-child(4) { width: 10%; }
+        th:nth-child(5), td:nth-child(5) { width: 5%; }
+        th:nth-child(6), td:nth-child(6) { width: 10%; }
+        th:nth-child(7), td:nth-child(7) { width: 5%; }
+        th:nth-child(8), td:nth-child(8) { width: 10%; }
+        th:nth-child(9), td:nth-child(9) { width: 15%; }
+        th:nth-child(10), td:nth-child(10) { width: 15%; }
+        th:nth-child(11), td:nth-child(11) { width: 5%; }
+        th:nth-child(12), td:nth-child(12) { width: 5%; }
     </style>
 </head>
 <body>
 
-<!-- Sidebar -->
 <div class="sidebar">
     <img src="images/vertiv-logo1.png" alt="Vertiv Logo" class="logo">
     <hr class="sidebar-divider">
@@ -117,6 +121,9 @@ $stmt = sqlsrv_query($conn, $sql);
                     <th>Quantity Ordered</th>
                     <th>Delivery Date</th>
                     <th>Quantity Delivered</th>
+                    <th>Site Location</th>
+                    <th>Storage Location</th>
+                    <th>Checked By</th>
                     <th>Status</th>
                     <th>Supplier</th>
                 </tr>
@@ -139,6 +146,9 @@ $stmt = sqlsrv_query($conn, $sql);
                             <td><?= $row['quantity_ordered']; ?></td>
                             <td><?= $row['delivery_date'] instanceof DateTime ? $row['delivery_date']->format('M-d-Y') : 'N/A'; ?></td>
                             <td><?= $row['quantity_delivered'] ?? '0'; ?></td>
+                            <td><?= htmlspecialchars($row['site_location'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars($row['storage_location'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars($row['checked_by'] ?? ''); ?></td>
                             <td><?= htmlspecialchars($row['status']); ?></td>
                             <td><?= htmlspecialchars($row['supplier']); ?></td>
                         </tr>

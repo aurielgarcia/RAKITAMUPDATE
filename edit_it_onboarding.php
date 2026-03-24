@@ -12,7 +12,7 @@ try {
                   SET name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?, snow_ticket = ?, pc_type = ?, onboarding_status = ?
                   WHERE employee_id = ?";
 
-    $params = [
+    $params = [ 
         $joiner['name'],
         $joiner['role'],
         $joiner['department'],
@@ -21,7 +21,7 @@ try {
         $joiner['snow_ticket'],
         $joiner['pc_type'],
         $joiner['onboarding_status'],
-        $joiner['employee_id']
+        $joiner['employee_id'],
     ];
 
     $stmt = sqlsrv_query($conn, $sqlUpdate, $params);

@@ -4,9 +4,8 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: index.html');
     exit();
 }
-include 'db_connect.php'; // Assumes sqlsrv connection is already set up
+include 'db_connect.php';
 
-// Fetch the equipment to edit
 if (isset($_GET['id'])) {
     $equipment_id = $_GET['id'];
 
@@ -19,18 +18,18 @@ if (isset($_GET['id'])) {
         exit();
     }
 
-    // Handle form submission to update equipment
     if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_equipment'])) {
         $name = $_POST['name'];
         $model = $_POST['model'];
+        $site_location = $_POST['site_location'];
         $storage_location = $_POST['storage_location'];
         $stock_quantity = (int) $_POST['stock_quantity'];
         $remarks = $_POST['remarks'];
 
         $update_sql = "UPDATE itequip_inventory.equipment 
-                       SET name = ?, model = ?, storage_location = ?, stock_quantity = ?, remarks = ? 
+                       SET name = ?, model = ?, site_location = ?, storage_location = ?, stock_quantity = ?, remarks = ? 
                        WHERE id = ?";
-        $update_params = array($name, $model, $storage_location, $stock_quantity, $remarks, $equipment_id);
+        $update_params = array($name, $model, $site_location, $storage_location, $stock_quantity, $remarks, $equipment_id);
         $update_stmt = sqlsrv_query($conn, $update_sql, $update_params);
 
         if ($update_stmt) {
@@ -100,7 +99,9 @@ if (isset($_GET['id'])) {
             margin-top: 4px;
             margin-bottom: 12px;
             border-radius: 8px;
+            border: 1px solid #ccc;
             font-size: 14px;
+            box-sizing: border-box;
         }
 
         input:focus, select:focus {
@@ -116,9 +117,13 @@ if (isset($_GET['id'])) {
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            width: 30%;
-            margin-left: 150px;
+            width: 100%;
+            max-width: 150px;
+            margin-top: 10px;
             transition: background 0.3s ease;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .btn:hover {
@@ -144,12 +149,14 @@ if (isset($_GET['id'])) {
         <label for="model">Model</label>
         <input type="text" id="model" name="model" value="<?php echo htmlspecialchars($item['model']); ?>" required>
 
+        <label for="site_location">Site Location</label>
+        <select id="site_location" name="site_location" required onchange="updateStorageOptions()">
+            <option value="Al Ghail" <?php if ($item['site_location'] == 'Al Ghail') echo 'selected'; ?>>Al Ghail</option>
+            <option value="Al Hamra" <?php if ($item['site_location'] == 'Al Hamra') echo 'selected'; ?>>Al Hamra</option>
+        </select>
+
         <label for="storage_location">Storage Location</label>
-            <select id="storage_location" name="storage_location" required>
-            <option value="I.T. Department Main Building" <?php if ($item['storage_location'] == 'I.T. Department Main Building') echo 'selected'; ?>>I.T. Department Main Building</option>
-            <option value="Stock Room Main Building" <?php if ($item['storage_location'] == 'Stock Room Main Building') echo 'selected'; ?>>Stock Room Main Building</option>
-            <option value="Stock Room IMS Building" <?php if ($item['storage_location'] == 'Stock Room IMS Building') echo 'selected'; ?>>Stock Room IMS Building</option>
-            <option value="I.T. Department Main Building & Stock Room Main Building" <?php if ($item['storage_location'] == 'I.T. Department Main Building & Stock Room Main Building') echo 'selected'; ?>>I.T. Department Main Building & Stock Room Main Building</option>
+        <select id="storage_location" name="storage_location" required>
         </select>
 
         <label for="stock_quantity">Stock Quantity</label>
@@ -161,6 +168,44 @@ if (isset($_GET['id'])) {
         <button type="submit" name="update_equipment" class="btn">SAVE</button>
     </form>
 </div>
+
+<script>
+    const storageOptions = {
+        "Al Ghail": [
+            "I.T. Department Main Building",
+            "Stock Room Main Building",
+            "Stock Room IMS Building"
+        ],
+        "Al Hamra": [
+            "I.T. Department Main Building",
+            "Storage Room"
+        ]
+    };
+
+    function updateStorageOptions() {
+        const siteSelect = document.getElementById('site_location');
+        const storageSelect = document.getElementById('storage_location');
+        const selectedSite = siteSelect.value;
+        
+        storageSelect.innerHTML = '';
+
+        const currentSavedValue = "<?php echo $item['storage_location']; ?>";
+
+        if (storageOptions[selectedSite]) {
+            storageOptions[selectedSite].forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.textContent = opt;
+                if (opt === currentSavedValue) {
+                    option.selected = true;
+                }
+                storageSelect.appendChild(option);
+            });
+        }
+    }
+
+    window.onload = updateStorageOptions;
+</script>
 
 </body>
 </html>

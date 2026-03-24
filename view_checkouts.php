@@ -1,53 +1,52 @@
 <?php
+session_start();
 include 'db_connect.php';
 
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $selectedYear = isset($_GET['year']) ? $_GET['year'] : '';
 $selectedMonth = isset($_GET['month']) ? $_GET['month'] : '';
 
-// Get distinct years
 $yearQuery = "SELECT DISTINCT YEAR(checkout_date) AS year FROM itequip_inventory.checkouts ORDER BY year DESC";
 $yearResult = sqlsrv_query($conn, $yearQuery);
 
-// Search and filter query
-$conditions = [];
 $params = [];
 $sql = "SELECT c.id, c.equipment_id, e.model, c.equipment_name, c.checkout_date, 
-               c.quantity_checked_out, c.requested_by, c.service_now_request_ticket, c.reason_for_request 
+               c.quantity_checked_out, c.site_location, c.storage_location, c.requested_by, c.service_now_request_ticket, c.deployed_by, c.reason_for_request 
         FROM itequip_inventory.checkouts c
         LEFT JOIN itequip_inventory.equipment e ON c.equipment_id = e.id
-        WHERE (c.equipment_name LIKE ? OR 
-               CONVERT(varchar, c.checkout_date, 23) LIKE ? OR 
-               c.requested_by LIKE ? OR 
-               c.service_now_request_ticket LIKE ? OR
-               e.model LIKE ?)";
+        WHERE 1=1";
 
-$searchWildcard = '%' . $search . '%';
-$params[] = [$searchWildcard, SQLSRV_PARAM_IN];
-$params[] = [$searchWildcard, SQLSRV_PARAM_IN];
-$params[] = [$searchWildcard, SQLSRV_PARAM_IN];
-$params[] = [$searchWildcard, SQLSRV_PARAM_IN];
-$params[] = [$searchWildcard, SQLSRV_PARAM_IN];
+if ($search !== '') {
+    $sql .= " AND (c.equipment_name LIKE ? OR 
+                   CONVERT(varchar, c.checkout_date, 23) LIKE ? OR 
+                   c.requested_by LIKE ? OR 
+                   c.service_now_request_ticket LIKE ? OR
+                   e.model LIKE ? OR
+                   ISNULL(c.deployed_by, '') LIKE ?)";
+    
+    $searchWildcard = '%' . $search . '%';
+    for ($i = 0; $i < 6; $i++) {
+        $params[] = $searchWildcard;
+    }
+}
 
 if (!empty($selectedYear)) {
-    $sql .= " AND YEAR(checkout_date) = ?";
-    $params[] = [$selectedYear, SQLSRV_PARAM_IN];
+    $sql .= " AND YEAR(c.checkout_date) = ?";
+    $params[] = $selectedYear;
 }
 
 if (!empty($selectedMonth)) {
-    $sql .= " AND MONTH(checkout_date) = ?";
-    $params[] = [$selectedMonth, SQLSRV_PARAM_IN];
+    $sql .= " AND MONTH(c.checkout_date) = ?";
+    $params[] = $selectedMonth;
 }
 
-$sql .= " ORDER BY checkout_date DESC";
+$sql .= " ORDER BY c.checkout_date DESC";
 
-// Flatten $params
-$flatParams = [];
-foreach ($params as $param) {
-    $flatParams[] = $param[0];
+if (empty($params)) {
+    $stmt = sqlsrv_query($conn, $sql);
+} else {
+    $stmt = sqlsrv_query($conn, $sql, $params);
 }
-
-$stmt = sqlsrv_query($conn, $sql, $flatParams);
 ?>
 
 <!DOCTYPE html>
@@ -88,7 +87,7 @@ $stmt = sqlsrv_query($conn, $sql, $flatParams);
             padding: 10px;
             text-align: left;
             word-wrap: break-word;
-            border: .5px solid #ccc; /* adds grid lines */
+            border: .5px solid #ccc;
         }
 
         table#equipmentTable th:nth-child(1),
@@ -98,7 +97,10 @@ $stmt = sqlsrv_query($conn, $sql, $flatParams);
         table#equipmentTable th:nth-child(5),
         table#equipmentTable td:nth-child(5),
         table#equipmentTable th:nth-child(6),
-        table#equipmentTable th:nth-child(7) {
+        table#equipmentTable th:nth-child(7),
+        table#equipmentTable th:nth-child(8),
+        table#equipmentTable th:nth-child(9),
+        table#equipmentTable th:nth-child(10) {
             text-align: center;
         }
 
@@ -111,13 +113,15 @@ $stmt = sqlsrv_query($conn, $sql, $flatParams);
         th:nth-child(3), td:nth-child(3) { width: 10%; }
         th:nth-child(4), td:nth-child(4) { width: 10%; }
         th:nth-child(5), td:nth-child(5) { width: 5%; }
-        th:nth-child(6), td:nth-child(6) { width: 15%; }
-        th:nth-child(7), td:nth-child(7) { width: 8%; }
+        th:nth-child(6), td:nth-child(6) { width: 10%; }
+        th:nth-child(7), td:nth-child(7) { width: 15%; }
+        th:nth-child(8), td:nth-child(8) { width: 10%; }
+        th:nth-child(9), td:nth-child(9) { width: 10%; }
+        th:nth-child(10), td:nth-child(10) { width: 10%; }
     </style>
 </head>
 <body>
 
-<!-- Sidebar -->
 <div class="sidebar">
     <img src="images/vertiv-logo1.png" alt="Vertiv Logo" class="logo">
     <hr class="sidebar-divider">
@@ -163,7 +167,10 @@ $stmt = sqlsrv_query($conn, $sql, $flatParams);
                         <th>Device Model</th>
                         <th>Check-Out Date</th>
                         <th>Check-Out Quantity</th>
+                        <th>Site Location</th>
+                        <th>Taken From</th>
                         <th>ServiceNow Ticket</th>
+                        <th>Deployed By</th>
                         <th>Reason for Request</th>
                     </tr>
                 </thead>
@@ -171,17 +178,20 @@ $stmt = sqlsrv_query($conn, $sql, $flatParams);
                     <?php if ($stmt && sqlsrv_has_rows($stmt)): ?>
                         <?php while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($row['requested_by']); ?></td>
-                                <td><?php echo htmlspecialchars($row['equipment_name']); ?></td>
+                                <td><?php echo htmlspecialchars($row['requested_by'] ?? ''); ?></td>
+                                <td><?php echo htmlspecialchars($row['equipment_name'] ?? ''); ?></td>
                                 <td><?php echo htmlspecialchars($row['model'] ?? ''); ?></td>
                                 <td><?php echo $row['checkout_date'] instanceof DateTime ? $row['checkout_date']->format('M-d-Y') : ''; ?></td>
-                                <td><?php echo $row['quantity_checked_out']; ?></td>
+                                <td><?php echo htmlspecialchars($row['quantity_checked_out'] ?? '0'); ?></td>
+                                <td><?php echo htmlspecialchars($row['site_location'] ?? ''); ?></td>
+                                <td><?php echo htmlspecialchars($row['storage_location'] ?? ''); ?></td>
                                 <td><?php echo htmlspecialchars($row['service_now_request_ticket'] ?? ''); ?></td>
-                                <td><?php echo htmlspecialchars($row['reason_for_request']); ?></td>
+                                <td><?php echo htmlspecialchars($row['deployed_by'] ?? ''); ?></td>
+                                <td><?php echo htmlspecialchars($row['reason_for_request'] ?? ''); ?></td>
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="7" class="no-records">No checkout records found.</td></tr>
+                        <tr><td colspan="8" class="no-records">No checkout records found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

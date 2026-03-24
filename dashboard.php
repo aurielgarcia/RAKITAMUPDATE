@@ -8,16 +8,23 @@ $sql = "SELECT
             id, 
             name AS item_name, 
             model, 
+            site_location, 
             storage_location, 
             stock_quantity, 
             status AS item_status, 
             remarks 
         FROM itequip_inventory.equipment 
-        ORDER BY stock_quantity $order";
+        ORDER BY item_name ASC, site_location ASC, storage_location ASC, stock_quantity $order";
+
 $stmt = sqlsrv_query($conn, $sql);
 
 if ($stmt === false) {
     die(print_r(sqlsrv_errors(), true));
+}
+
+$inventory = [];
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    $inventory[] = $row;
 }
 ?>
 
@@ -32,12 +39,20 @@ if ($stmt === false) {
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         .table-wrapper {
-            max-height: calc(100.9vh - 200px);
+            max-height: calc(100vh - 220px);
             overflow-y: auto;
             overflow-x: auto;
-            border: 2px solid #ddd;
+            border: 1px solid #ddd;
             width: 100%;
             box-sizing: border-box;
+            background: #fff;
+        }
+
+        table#equipmentTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            table-layout: fixed;
         }
 
         table#equipmentTable th {
@@ -45,65 +60,69 @@ if ($stmt === false) {
             top: 0;
             background-color: #343a40;
             color: white;
-            z-index: 1;
+            z-index: 10;
+            padding: 12px 10px;
+            text-align: left;
+            border: 1px solid #454d55;
         }
 
-        table#equipmentTable {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-            table-layout: auto;
-            border: 1px solid #ccc; /* adds outer border */
-        }
-
-        table#equipmentTable th,
         table#equipmentTable td {
             padding: 10px;
             text-align: left;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
             word-wrap: break-word;
-            border: .5px solid #ccc; /* adds grid lines */
         }
 
-        table#equipmentTable th:nth-child(1),
-        table#equipmentTable th:nth-child(2),
-        table#equipmentTable th:nth-child(3),
-        table#equipmentTable th:nth-child(4),
-        table#equipmentTable td:nth-child(4),
-        table#equipmentTable th:nth-child(5),
-        table#equipmentTable td:nth-child(5),
-        table#equipmentTable th:nth-child(6),
-        table#equipmentTable th:nth-child(7),
-        table#equipmentTable td:nth-child(7) {
-            text-align: center;
+        .col-item     { width: 15%; }
+        .col-model    { width: 15%; }
+        .col-site     { width: 10%; }
+        .col-storage  { width: 15%; }
+        .col-stock    { width: 8%; }
+        .col-status   { width: 12%; }
+        .col-remarks  { width: 15%; }
+        .col-action   { width: 10%; }
+
+        .text-center {
+            text-align: center !important;
         }
 
-        th:nth-child(1), td:nth-child(1) { width: 18%; }
-        th:nth-child(2), td:nth-child(2) { width: 15%; }
-        th:nth-child(3), td:nth-child(3) { width: 20%; }
-        th:nth-child(4), td:nth-child(4) { width: 8%; }
-        th:nth-child(5), td:nth-child(5) { width: 10%; }
-        th:nth-child(6), td:nth-child(6) { width: 15%; }
-        th:nth-child(7), td:nth-child(7) { width: 10%; }
+        .status-available { color: #28a745; font-weight: bold; }
+        .status-out { color: #dc3545; font-weight: bold; }
+        .status-need-to-order { color: #FF8C00; font-weight: bold; }        
+        .selected-row { background-color: #e8f4ff !important; }
+        tr:hover { background-color: #f8f9fa; }
 
-        .status-available {
-            color: green;
-            font-weight: bold;
+        .site-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
         }
+        .site-ghail { background: #e3f2fd; color: #0d47a1; }
+        .site-hamra { background: #f3e5f5; color: #4a148c; }
+        .site-default { background: #e9ecef; color: #495057; }
 
-        .status-out {
-            color: red;
-            font-weight: bold;
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
-
-        .selected-row {
-    background-color: #d1e7fd !important; /* Light blue highlight */
+        .filter-select {
+            padding: 9px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            min-width: 150px;
         }
-
+        #valueFilter {
+            display: none;
+        }
     </style>
 </head>
 <body>
 
-<!-- Sidebar -->
 <div class="sidebar">
     <img src="images/vertiv-logo1.png" alt="Vertiv Logo" class="logo">
     <hr class="sidebar-divider">
@@ -114,109 +133,170 @@ if ($stmt === false) {
     <a href="logout.php" class="logout-link"><i class="material-icons">logout</i>Logout</a>
 </div>
 
-<div class="search-sort-container">
-    <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="Search">
-    </div>
-</div>
-
-<!-- Main Content -->
 <div class="main-content">
-    <div style="text-align: right; margin: 10px 20px;">
-    <a href="export_itequipment.php?order=<?= strtolower($order) ?>" class="icon-btn" title="Export to Excel" style="color: green; font-size: 20px;">
-        <i class="fas fa-file-excel"></i> Export
-    </a>
-</div>
+    <div class="search-sort-container" style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div class="filter-controls">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search..." style="width: 250px; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+            </div>
+            
+            <select id="columnFilter" class="filter-select">
+                <option value="">Filter</option>
+                <option value="0">Item Description</option>
+                <option value="1">Device Model</option>
+                <option value="2">Site Location</option>
+                <option value="3">Storage Location</option>
+                <option value="5">Status</option>
+            </select>
+
+            <select id="valueFilter" class="filter-select">
+                <option value="">Choose Value...</option>
+            </select>
+
+            <button onclick="resetFilters()" style="padding: 10px 15px; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; background: #f8f9fa;">
+                <i class="fas fa-sync-alt"></i> Reset
+            </button>
+        </div>
+    </div>
+
     <div class="tab-header">RAK - IT Equipment Inventory</div>
 
     <div class="table-wrapper">
         <table id="equipmentTable">
             <thead>
                 <tr>
-                    <th>Item Description</th>
-                    <th>Device Model</th>
-                    <th>Storage Location</th>
-                    <th>
-                        <a href="dashboard.php?order=<?= $toggle_order ?>&t=<?= time() ?>" style="text-decoration: none; color: inherit;">
-                            Stock Quantity <?= $order === 'ASC' ? '▲' : '▼' ?>
+                    <th class="col-item text-center">Item Description</th>
+                    <th class="col-model text-center">Device Model</th>
+                    <th class="col-site text-center">Site Location</th>
+                    <th class="col-storage text-center">Storage Location</th>
+                    <th class="col-stock text-center">
+                        <a href="dashboard.php?order=<?= $toggle_order ?>" style="text-decoration: none; color: inherit;">
+                            Stock <?= $order === 'ASC' ? '▲' : '▼' ?>
                         </a>
                     </th>
-                    <th>Status</th>
-                    <th>Remarks</th>
-                    <th>Action</th>
+                    <th class="col-status text-center">Status</th>
+                    <th class="col-remarks text-center">Remarks</th>
+                    <th class="col-action text-center">Action</th>
                 </tr>
             </thead>
             <tbody>
-                <?php while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)): ?>
+                <?php foreach ($inventory as $row): 
+                    $siteClass = 'site-default';
+                    if ($row['site_location'] === 'Al Ghail') $siteClass = 'site-ghail';
+                    if ($row['site_location'] === 'Al Hamra') $siteClass = 'site-hamra';
+                    $stock = (int)($row['stock_quantity'] ?? 0);
+                ?>
                 <tr>
-                    <td><?= htmlspecialchars($row['item_name']) ?></td>
-                    <td><?= htmlspecialchars($row['model'] ?? '') ?></td>
-                    <td><?= htmlspecialchars($row['storage_location']) ?></td>
-                    <td><?= isset($row['stock_quantity']) ? (int)$row['stock_quantity'] : 0 ?></td>
-                    <td>
-                        <?php if ((int)$row['stock_quantity'] > 0): ?>
-                            <span class="status-available">Available</span>
-                        <?php else: ?>
+                    <td style="font-weight: 500;"><?= htmlspecialchars($row['item_name']) ?></td>
+                    <td><?= htmlspecialchars($row['model'] ?? 'N/A') ?></td>
+                    <td class="text-center">
+                        <span class="site-badge <?= $siteClass ?>">
+                            <?= htmlspecialchars($row['site_location'] ?: 'Not Set') ?>
+                        </span>
+                    </td>
+                    <td><?= htmlspecialchars($row['storage_location'] ?: 'N/A') ?></td>
+                    <td class="text-center"><?= $stock ?></td>
+                    <td class="text-center">
+                        <?php if ($stock === 0): ?>
                             <span class="status-out">Out of Stock</span>
+                        <?php elseif ($stock <= 3): ?>
+                            <span class="status-need-to-order">Need to Order</span>
+                        <?php else: ?>
+                            <span class="status-available">Available</span>
                         <?php endif; ?>
                     </td>
-                    <td><?= htmlspecialchars($row['remarks'] ?? '') ?></td>
-                    <td>
+                    <td class="text-left" style="font-size: 12px; color: #666;"><?= htmlspecialchars($row['remarks'] ?? '') ?></td>
+                    <td class="text-center">
                         <a href="edit_equipment.php?id=<?= $row['id'] ?>" class="icon-btn" title="Edit">
-                            <i class="fas fa-pen"></i>
+                            <i class="fas fa-pen" style="color: #007bff;"></i>
                         </a>
                         <a href="delete_equipment.php?id=<?= $row['id'] ?>" class="icon-btn delete" title="Delete"
-                           onclick="return confirm('Are you sure you want to delete this item?');">
-                            <i class="fas fa-trash"></i>
+                           onclick="return confirm('Confirm deletion of this record for <?= addslashes($row['site_location']) ?> - <?= addslashes($row['storage_location']) ?>?');">
+                            <i class="fas fa-trash" style="color: #dc3545; margin-left: 10px;"></i>
                         </a>
                     </td>
                 </tr>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             </tbody>
         </table>
     </div>
 </div>
 
 <script>
-    document.getElementById('searchInput').addEventListener('input', function () {
-        const filter = this.value.toLowerCase();
-        const rows = document.querySelectorAll('#equipmentTable tbody tr');
-
-        rows.forEach(row => {
-            const itemDesc = row.children[0].textContent.toLowerCase();
-            const model = row.children[1].textContent.toLowerCase();
-            const location = row.children[2].textContent.toLowerCase();
-            const status = row.children[4].textContent.toLowerCase();
-
-            if (
-                itemDesc.includes(filter) ||
-                model.includes(filter) ||
-                location.includes(filter) ||
-                status.includes(filter)
-            ) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    });
-</script>
-
-
-<script>
     document.addEventListener('DOMContentLoaded', function () {
-        const rows = document.querySelectorAll('table tbody tr');
+        const table = document.getElementById('equipmentTable');
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        const columnFilter = document.getElementById('columnFilter');
+        const valueFilter = document.getElementById('valueFilter');
+        const globalSearch = document.getElementById('searchInput');
 
-        rows.forEach(row => {
-            row.addEventListener('click', function () {
-                // Remove highlight from all rows
-                rows.forEach(r => r.classList.remove('selected-row'));
+        columnFilter.addEventListener('change', function() {
+            const colIndex = this.value;
+            valueFilter.innerHTML = '<option value="">Choose Value...</option>';
+            
+            if (colIndex === "") {
+                valueFilter.style.display = 'none';
+                applyFilters();
+                return;
+            }
 
-                // Highlight the clicked row
-                this.classList.add('selected-row');
+            const uniqueValues = new Set();
+            rows.forEach(row => {
+                const text = row.cells[colIndex].textContent.trim();
+                if (text) uniqueValues.add(text);
             });
+
+            Array.from(uniqueValues).sort().forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = val;
+                valueFilter.appendChild(opt);
+            });
+
+            valueFilter.style.display = 'block';
+            applyFilters();
+        });
+
+        function applyFilters() {
+            const globalQuery = globalSearch.value.toLowerCase();
+            const colIndex = columnFilter.value;
+            const selectedValue = valueFilter.value.toLowerCase();
+
+            rows.forEach(row => {
+                const rowText = row.innerText.toLowerCase();
+                const matchesGlobal = rowText.includes(globalQuery);
+                
+                let matchesColumn = true;
+                if (colIndex !== "" && selectedValue !== "") {
+                    const cellText = row.cells[colIndex].textContent.trim().toLowerCase();
+                    matchesColumn = (cellText === selectedValue);
+                }
+
+                row.style.display = (matchesGlobal && matchesColumn) ? '' : 'none';
+            });
+        }
+
+        globalSearch.addEventListener('input', applyFilters);
+        valueFilter.addEventListener('change', applyFilters);
+
+        table.addEventListener('click', function (e) {
+            const row = e.target.closest('tr');
+            if (!row || row.parentElement.tagName === 'THEAD') return;
+            rows.forEach(r => r.classList.remove('selected-row'));
+            row.classList.add('selected-row');
         });
     });
+
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('columnFilter').value = '';
+        const valueFilter = document.getElementById('valueFilter');
+        valueFilter.innerHTML = '<option value="">Choose Value...</option>';
+        valueFilter.style.display = 'none';
+        
+        const rows = document.querySelectorAll('#equipmentTable tbody tr');
+        rows.forEach(row => row.style.display = '');
+    }
 </script>
 
 </body>

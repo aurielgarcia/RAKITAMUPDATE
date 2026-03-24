@@ -49,7 +49,6 @@
         border: 1px solid #ccc;
         padding: 15px;
         text-align: left;
-        white-space: nowrap; 
     }
 
     th {
@@ -111,7 +110,7 @@
     .modal input,
     .modal select {
         width: 100%;
-        padding: 15px;
+        padding: 8px;
         margin: 5px 0 12px 0;
         border-radius: 5px;
         border: 1px solid #ccc;
@@ -201,10 +200,6 @@
             text-align: center;
         }
 
-        table#stagingTable td:nth-child(1) {
-            text-align: left;
-        }
-
     </style>
 </head>
 <body>
@@ -215,7 +210,6 @@
     <hr class="sidebar-divider">
     <a href="main_menu.php"><i class="material-icons">home</i> Main Menu</a>
     <a href="it_asset_count.php"><i class="material-icons">arrow_right</i>IT Asset Count</a>
-    <a href="it_onboarding_lists.php"><i class="material-icons">arrow_right</i>Onboarded List</a>
     <a href="logout.php" class="logout-link"><i class="material-icons">logout</i>Logout</a>
 </div>
 
@@ -237,7 +231,7 @@
                     <th>Manager's Name</th>
                     <th>Joining Date</th>
                     <th>SNOW Ticket</th>
-                    <th>PC Type</th>
+                    <th>Device Type</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -249,7 +243,7 @@
     </div>
 </div>
 
-<!-- ADD JOINER MODAL -->
+<!-- ✅ ADD JOINER MODAL -->
 <div id="addJoinerModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeModal('addJoinerModal')">&times;</span>
@@ -259,7 +253,7 @@
       <input type="text" name="name" required style="text-align:center;">
 
       <label>Employee ID:</label>
-      <input type="text" name="employee_id" required style="text-align:center;">
+<input type="number" name="employee_id" required style="text-align:center;">
 
       <label>Role / Designation:</label>
       <input type="text" name="role" required style="text-align:center;"> 
@@ -276,19 +270,19 @@
       <label>SNOW Ticket:</label>
       <input type="text" name="snow_ticket" placeholder="Optional" style="text-align:center;">
 
-      <label>PC Type:</label>
+      <label>Device Type:</label>
       <select name="pc_type" required style="text-align:center;">
-        <option value="">-- Select PC Type --</option>
+        <option value="">Select Device Type</option>
         <option value="All In One PC">All In One PC</option>
         <option value="Engineering">Engineering</option>
         <option value="SolidWorks">SolidWorks</option>
         <option value="Standard">Standard</option>
       </select>
 
-      <!-- FIXED: name="onboarding_status" -->
+      <!-- ✅ FIXED: name="onboarding_status" -->
       <label>Status:</label>
       <select name="onboarding_status" required style="text-align:center;">
-        <option value="">-- Select Status --</option>
+        <option value="">Select Status</option>
         <option value="New Joiner">New Joiner</option>
         <option value="Existing - Approved">Existing - Approved</option>
         <option value="Now Onboarding">Now Onboarding</option>
@@ -301,16 +295,20 @@
   </div>
 </div>
 
-<!-- EDIT JOINER MODAL -->
+<!-- ✅ EDIT JOINER MODAL -->
 <div id="editJoinerModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeModal('editJoinerModal')">&times;</span>
     <h2>Edit Joiner</h2>
     <form id="editJoinerForm">
-      <input type="hidden" name="employee_id">
+      <!-- Hidden ID field to identify row -->
+      <input type="hidden" name="id">
 
       <label>Full Name:</label>
       <input type="text" name="name" required style="text-align:center;">
+
+      <label>Employee ID:</label>
+      <input type="number" name="employee_id" required style="text-align:center;">
 
       <label>Role / Designation:</label>
       <input type="text" name="role" required style="text-align:center;">
@@ -327,19 +325,18 @@
       <label>SNOW Ticket:</label>
       <input type="text" name="snow_ticket" placeholder="Optional" style="text-align:center;">
 
-      <label>PC Type:</label>
+      <label>Device Type:</label>
       <select name="pc_type" required style="text-align:center;">
-        <option value="">-- Select PC Type --</option>
+        <option value="">Select Device Type</option>
         <option value="All In One PC">All In One PC</option>
         <option value="Engineering">Engineering</option>
         <option value="SolidWorks">SolidWorks</option>
         <option value="Standard">Standard</option>
       </select>
 
-      <!-- FIXED: name="onboarding_status" -->
       <label>Status:</label>
       <select name="onboarding_status" required style="text-align:center;">
-        <option value="">-- Select Status --</option>
+        <option value="">Select Status</option>
         <option value="New Joiner">New Joiner</option>
         <option value="Existing - Approved">Existing - Approved</option>
         <option value="Now Onboarding">Now Onboarding</option>
@@ -351,6 +348,7 @@
     </form>
   </div>
 </div>
+
 
 <script>
 const tbody = document.querySelector('#stagingTable tbody');
@@ -372,7 +370,6 @@ window.onclick = e => {
 // ----- CREATE TABLE ROW -----
 function createTableRow(data) {
   const row = document.createElement('tr');
-  row.setAttribute('data-id', data.id);
   row.innerHTML = `
     <td>${data.name}</td>
     <td>${data.employee_id}</td>
@@ -466,21 +463,7 @@ document.getElementById('editJoinerForm').addEventListener('submit', e => {
 function attachRowButtons(row) {
   // Onboarded
 row.querySelector('.onboarded-btn').addEventListener('click', () => {
-
-  const confirmOnboard = confirm("Are you sure you want to Onboard this new joiner?");
-    if (!confirmOnboard) return;
-
-    // Use .dataset.id to get the value from data-id
-    const db_id = row.dataset.id; 
-
-    // Add a quick check to stop if the ID is missing
-    if (!db_id) {
-        alert("Error: Missing ID. Please refresh the page.");
-        return;
-    }
-
     const data = {
-        id: row.getAttribute('data-id'),
         name: row.cells[0].textContent,
         employee_id: row.cells[1].textContent,
         role: row.cells[2].textContent,
@@ -498,7 +481,7 @@ row.querySelector('.onboarded-btn').addEventListener('click', () => {
     .then(res => res.json())
     .then(result => {
         if (result.success) {
-            alert(' Successfully onboarded!');
+            alert('✅ Successfully onboarded!');
             row.remove();
         } else {
             alert('Error: ' + result.message);
@@ -512,24 +495,31 @@ row.querySelector('.onboarded-btn').addEventListener('click', () => {
 
   // Cancelled
 row.querySelector('.cancelled-btn').addEventListener('click', () => {
-    const confirmCancel = confirm("Are you sure you want to cancel this joiner? This will delete the record.");
-    if (!confirmCancel) return;
+    // Ask for confirmation
+    const confirmCancel = confirm("Are you sure you want to mark this joiner as Cancelled?");
+    if (!confirmCancel) return; // Exit if user clicks 'No'
 
-    const db_id = row.getAttribute('data-id');
+    const data = {
+        name: row.cells[0].textContent,
+        employee_id: row.cells[1].textContent,
+        role: row.cells[2].textContent,
+        department: row.cells[3].textContent,
+        manager_name: row.cells[4].textContent,
+        joining_date: row.cells[5].textContent,
+        snow_ticket: row.cells[6].textContent,
+        pc_type: row.cells[7].textContent,
+        onboarding_status: 'Cancelled'
+    };
 
-    if (!db_id) {
-        alert("Error: ID not found. Please refresh the page.");
-        return;
-    }
-    fetch('delete_it_onboarding.php', {
+    fetch('add_it_onboarding.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: db_id })
+        body: JSON.stringify({ joiners: [data] })
     })
     .then(res => res.json())
     .then(result => {
-        if (result.success) {
-            alert('Joiner deleted successfully.');
+        if(result.success) {
+            alert('Joiner marked as Cancelled.');
             row.remove();
         } else {
             alert('Error: ' + result.message);
@@ -541,22 +531,27 @@ row.querySelector('.cancelled-btn').addEventListener('click', () => {
     });
 });
 
-
   // Edit
-  row.querySelector('.edit-btn').addEventListener('click', () => {
-    const form = document.getElementById('editJoinerForm');
-    form.id.value = row.getAttribute('data-id');
-    form.employee_id.value = row.cells[1].textContent;
-    form.name.value = row.cells[0].textContent;
-    form.role.value = row.cells[2].textContent;
-    form.department.value = row.cells[3].textContent;
-    form.manager_name.value = row.cells[4].textContent;
-    form.joining_date.value = row.cells[5].textContent;
-    form.snow_ticket.value = row.cells[6].textContent;
-    form.pc_type.value = row.cells[7].textContent;
-    form.onboarding_status.value = row.cells[8].textContent;
-    document.getElementById('editJoinerModal').style.display = 'block';
-  });
+row.querySelector('.edit-btn').addEventListener('click', () => {
+  const form = document.getElementById('editJoinerForm');
+
+  // Store the row id in a hidden field
+  form.elements['id'].value = row.dataset.id;  
+
+  // Populate form fields
+  form.elements['employee_id'].value = row.cells[1].textContent;
+  form.elements['name'].value = row.cells[0].textContent;
+  form.elements['role'].value = row.cells[2].textContent;
+  form.elements['department'].value = row.cells[3].textContent;
+  form.elements['manager_name'].value = row.cells[4].textContent;
+  form.elements['joining_date'].value = row.cells[5].textContent;
+  form.elements['snow_ticket'].value = row.cells[6].textContent;
+  form.elements['pc_type'].value = row.cells[7].textContent;
+  form.elements['onboarding_status'].value = row.cells[8].textContent;
+
+  document.getElementById('editJoinerModal').style.display = 'block';
+});
+
 }
 
 // ----- INITIAL LOAD -----

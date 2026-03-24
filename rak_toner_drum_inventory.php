@@ -1,19 +1,20 @@
 <?php
-// rak_toner_drum_inventory.php
 session_start();
 include('db_connect.php');
 
-// Sorting logic
 $order = isset($_GET['order']) && $_GET['order'] === 'desc' ? 'DESC' : 'ASC';
 $orderToggle = $order === 'ASC' ? 'desc' : 'asc';
 
-// SQL Server query
-$sql = "SELECT id, printer_name, printer_location, model, color, type, stock_quantity, status FROM itequip_inventory.toner_drum_inventory ORDER BY stock_quantity $order";
+$sql = "SELECT id, printer_name, printer_location, model, site_location, storage_location, color, type, stock_quantity, status FROM itequip_inventory.toner_drum_inventory ORDER BY stock_quantity $order";
 $stmt = sqlsrv_query($conn, $sql);
 
-// Check if query execution was successful
 if ($stmt === false) {
     die(print_r(sqlsrv_errors(), true));
+}
+
+$inventory = [];
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    $inventory[] = $row;
 }
 ?>
 
@@ -27,12 +28,20 @@ if ($stmt === false) {
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         .table-wrapper {
-            max-height: calc(104vh - 200px); /* Adjust 200px as needed for header/footer space */
+            max-height: calc(100vh - 220px);
             overflow-y: auto;
-            overflow-x: auto; /* Add this in case table gets wider on small screens */
-            border: 2px solid #ddd;
+            overflow-x: auto;
+            border: 1px solid #ddd;
             width: 100%;
             box-sizing: border-box;
+            background: #fff;
+        }
+
+        table#equipmentTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            table-layout: fixed;
         }
 
         table#equipmentTable th {
@@ -40,46 +49,40 @@ if ($stmt === false) {
             top: 0;
             background-color: #343a40;
             color: white;
-            z-index: 1;
-            font-size: 15px;
+            z-index: 10;
+            padding: 12px 10px;
+            text-align: left;
+            border: 1px solid #454d55;
         }
 
-        table#equipmentTable {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-            table-layout: auto;
-            border: 1px solid #ccc; /* adds outer border */
-        }
-
-        table#equipmentTable th,
         table#equipmentTable td {
             padding: 10px;
             text-align: left;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
             word-wrap: break-word;
-            border: .5px solid #ccc; /* adds grid lines */
         }
 
-        table#equipmentTable th:nth-child(1),
-        table#equipmentTable th:nth-child(2),
-        table#equipmentTable th:nth-child(3),
-        table#equipmentTable th:nth-child(4),
-        table#equipmentTable th:nth-child(5),
-        table#equipmentTable th:nth-child(6),
-        table#equipmentTable td:nth-child(6),
-        table#equipmentTable td:nth-child(7),
-        table#equipmentTable th:nth-child(7),
-        table#equipmentTable th:nth-child(8),
-        table#equipmentTable td:nth-child(8) {
-            text-align: center;
+        .col-item     { width: 15%; }
+        .col-site    { width: 8%; }
+        .col-printloc     { width: 15%; }
+        .col-model  { width: 10%; }
+        .col-color    { width: 8%; }
+        .col-type   { width: 7%; }
+        .col-stock  { width: 7%; }
+        .col-storloc   { width: 12%; }
+        .col-status   { width: 12%; }
+        .col-action   { width: 6%; }
+
+        .text-center {
+            text-align: center !important;
         }
 
-        th:nth-child(1), td:nth-child(1) { width: 20%; }
-        th:nth-child(2), td:nth-child(2) { width: 20%; }
-        th:nth-child(3), td:nth-child(3) { width: 12%; }
-        th:nth-child(4), td:nth-child(4) { width: 15%; }
-        th:nth-child(5), td:nth-child(5) { width: 10%; }
-        th:nth-child(6), td:nth-child(6) { width: 9%; }
+        .status-available { color: #28a745; font-weight: bold; }
+        .status-out { color: #dc3545; font-weight: bold; }
+        .status-need-to-order { color: #FF8C00; font-weight: bold; }
+        .selected-row { background-color: #e8f4ff !important; }
+        tr:hover { background-color: #f8f9fa; }
 
         .color-box {
             display: inline-block;
@@ -90,26 +93,32 @@ if ($stmt === false) {
             vertical-align: middle;
         }
 
-        .status-available {
-            color: green;
-            font-weight: bold;
+        .site-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
         }
+        .site-ghail { background: #e3f2fd; color: #0d47a1; }
+        .site-hamra { background: #f3e5f5; color: #4a148c; }
+        .site-default { background: #e9ecef; color: #495057; }
 
-        .status-need-to-order {
-            color: #FF8C00;
-            font-weight: bold;
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
-
-        .status-out-of-stock {
-            color: red;
-            font-weight: bold;
+        .filter-select {
+            padding: 9px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            min-width: 160px;
         }
-
-        .selected-row {
-    background-color: #d1e7fd !important; /* Light blue highlight */
+        #valueFilter {
+            display: none;
         }
-
-
     </style>
 </head>
 <body>
@@ -124,40 +133,75 @@ if ($stmt === false) {
     <a href="logout.php" class="logout-link"><i class="material-icons">logout</i>Logout</a>
 </div>
 
-<div class="search-sort-container">
-    <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Search">
-    </div>
-</div>
-
 <div class="main-content">
+
+    <div class="search-sort-container" style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div class="filter-controls">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search..." style="width: 250px; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+            </div>
+
+            <select id="columnFilter" class="filter-select">
+                <option value="">Filter</option>
+                <option value="0">Printer Name</option>
+                <option value="1">Site</option>
+                <option value="3">Device Model</option>
+                <option value="4">Color</option>
+                <option value="5">Type</option>
+                <option value="8">Status</option>
+            </select>
+
+            <select id="valueFilter" class="filter-select">
+                <option value="">Choose Value...</option>
+            </select>
+
+            <button onclick="resetFilters()" style="padding: 10px 15px; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; background: #f8f9fa;">
+                <i class="fas fa-sync-alt"></i> Reset
+            </button>
+        </div>
+    </div>
+
     <div class="tab-header">RAK - Printer Toner & Drum Inventory</div>
 
     <div class="table-wrapper">
         <table id="equipmentTable">
             <thead>
                 <tr>
-                    <th>Printer Name</th>
-                    <th>Printer Location</th>
-                    <th>Model Name</th>
-                    <th>Color</th>
-                    <th>Type</th>
-                    <th>
+                    <th class="col-item text-center">Printer Name</th>
+                    <th class="col-site text-center">Site</th>
+                    <th class="col-printloc text-center">Printer Location</th>
+                    <th class="col-model">Device Model</th>
+                    <th class="col-color text-center">Color</th>
+                    <th class="col-type text-center">Type</th>
+                    <th class="col-stock text-center">
                         <a href="?order=<?= $orderToggle ?>" style="color: white; text-decoration: none;">
                             Stock Quantity <?= $order === 'ASC' ? '▲' : '▼' ?>
                         </a>
                     </th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th class="col-storloc text-center">Storage Location</th>
+                    <th class="col-status text-center">Status</th>
+                    <th class="col-action text-center">Action</th>
                 </tr>
             </thead>
             <tbody id="inventoryTable">
-                <?php while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                    $quantity = (int)$row['stock_quantity'];
-                    $status = $quantity >= 3 ? 'Available' : ($quantity >= 1 ? 'Need to Order' : 'Out Of Stock');
-                ?>
+                <?php foreach ($inventory as $row): 
+                    $siteClass = 'site-default';
+                    if ($row['site_location'] === 'Al Ghail') $siteClass = 'site-ghail';
+                    if ($row['site_location'] === 'Al Hamra') $siteClass = 'site-hamra';
+                    
+                    $stock = (int)$row['stock_quantity'];
+
+                    $statusText = "Available";
+                    if ($stock === 0) $statusText = "Out of Stock";
+                    elseif ($stock <= 3) $statusText = "Need to Order";
+                ?>               
                 <tr>
                     <td><?= htmlspecialchars($row['printer_name']) ?></td>
+                    <td class="text-center">
+                        <span class="site-badge <?= $siteClass ?>">
+                            <?= htmlspecialchars($row['site_location'] ?: 'Not Set') ?>
+                        </span>
+                    </td>
                     <td><?= htmlspecialchars($row['printer_location']) ?></td>
                     <td><?= htmlspecialchars($row['model']) ?></td>
                     <td>
@@ -165,52 +209,107 @@ if ($stmt === false) {
                         <?= htmlspecialchars($row['color']) ?>
                     </td>
                     <td><?= htmlspecialchars($row['type']) ?></td>
-                    <td><?= $quantity ?></td>
-                    <td class="<?= strtolower(str_replace(' ', '-', 'status-' . $status)) ?>">
-                        <?= $status ?>
+                    <td class="text-center"><?= $stock ?></td>
+                    <td><?= htmlspecialchars($row['storage_location'] ?: 'N/A') ?></td>
+                    <td class="text-center">
+                        <?php if ($stock === 0): ?>
+                            <span class="status-out">Out of Stock</span>
+                        <?php elseif ($stock <= 3): ?>
+                            <span class="status-need-to-order">Need to Order</span>
+                        <?php else: ?>
+                            <span class="status-available">Available</span>
+                        <?php endif; ?>
                     </td>
-                    <td>
+                    <td class="text-center">
                         <a href="edit_toner_drum.php?id=<?= $row['id'] ?>" class="icon-btn" title="Edit">
-                            <i class="fas fa-pen"></i>
+                            <i class="fas fa-pen" style="color: #007bff;"></i>
                         </a>
                         <a href="delete_toner_drum.php?id=<?= $row['id'] ?>" class="icon-btn delete" title="Delete" onclick="return confirm('Are you sure you want to delete this record?');">
-                            <i class="fas fa-trash"></i>
+                            <i class="fas fa-trash" style="color: #dc3545; margin-left: 5px;"></i>
                         </a>
                     </td>
                 </tr>
-                <?php } ?>
+                <?php endforeach; ?>
             </tbody>
         </table>
     </div>
 </div>
 
 <script>
-document.getElementById('searchInput').addEventListener('input', function () {
-    let filter = this.value.toLowerCase();
-    let rows = document.querySelectorAll('#inventoryTable tr');
-    
-    rows.forEach(function (row) {
-        let cells = row.querySelectorAll('td');
-        let match = Array.from(cells).some(td => td.textContent.toLowerCase().includes(filter));
-        row.style.display = match ? '' : 'none';
-    });
-});
-</script>
+document.addEventListener('DOMContentLoaded', function () {
+    const table = document.getElementById('equipmentTable');
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const columnFilter = document.getElementById('columnFilter');
+    const valueFilter = document.getElementById('valueFilter');
+    const globalSearch = document.getElementById('searchInput');
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const rows = document.querySelectorAll('table tbody tr');
+    columnFilter.addEventListener('change', function() {
+        const colIndex = this.value;
+        valueFilter.innerHTML = '<option value="">Choose Value...</option>';
+        
+        if (colIndex === "") {
+            valueFilter.style.display = 'none';
+            applyFilters();
+            return;
+        }
+
+        const uniqueValues = new Set();
+        rows.forEach(row => {
+            let text = row.cells[colIndex].textContent.trim();
+            if (text) uniqueValues.add(text);
+        });
+
+        Array.from(uniqueValues).sort().forEach(val => {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = val;
+            valueFilter.appendChild(opt);
+        });
+
+        valueFilter.style.display = 'block';
+        applyFilters();
+    });
+
+    function applyFilters() {
+        const globalQuery = globalSearch.value.toLowerCase();
+        const colIndex = columnFilter.value;
+        const selectedValue = valueFilter.value.toLowerCase();
 
         rows.forEach(row => {
-            row.addEventListener('click', function () {
-                // Remove highlight from all rows
-                rows.forEach(r => r.classList.remove('selected-row'));
+            const rowText = row.innerText.toLowerCase();
+            const matchesGlobal = rowText.includes(globalQuery);
+            
+            let matchesColumn = true;
+            if (colIndex !== "" && selectedValue !== "") {
+                const cellText = row.cells[colIndex].textContent.trim().toLowerCase();
+                matchesColumn = (cellText === selectedValue);
+            }
 
-                // Highlight the clicked row
-                this.classList.add('selected-row');
-            });
+            row.style.display = (matchesGlobal && matchesColumn) ? '' : 'none';
         });
+    }
+
+    globalSearch.addEventListener('input', applyFilters);
+    valueFilter.addEventListener('change', applyFilters);
+
+    table.addEventListener('click', function (e) {
+        const row = e.target.closest('tr');
+        if (!row || row.parentElement.tagName === 'THEAD') return;
+        rows.forEach(r => r.classList.remove('selected-row'));
+        row.classList.add('selected-row');
     });
+});
+
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('columnFilter').value = '';
+    const valueFilter = document.getElementById('valueFilter');
+    valueFilter.innerHTML = '<option value="">Choose Value...</option>';
+    valueFilter.style.display = 'none';
+    
+    const rows = document.querySelectorAll('#inventoryTable tr');
+    rows.forEach(row => row.style.display = '');
+}
 </script>
 
 </body>

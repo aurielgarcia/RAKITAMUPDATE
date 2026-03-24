@@ -11,7 +11,7 @@ if (!isset($conn)) {
 }
 
 // Fetch active joiners only
-$sql = "SELECT employee_id, name, role, department, manager_name, joining_date, snow_ticket, pc_type, onboarding_status
+$sql = "SELECT id, employee_id, name, role, department, manager_name, joining_date, snow_ticket, pc_type, onboarding_status
         FROM dbo.it_onboarding
         WHERE onboarding_status IN ('New Joiner','Existing - Approved','Now Onboarding')
         ORDER BY name ASC";

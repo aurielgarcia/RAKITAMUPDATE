@@ -4,21 +4,24 @@ require_once 'db_connect.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-if (!isset($data['employee_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Employee ID is required']);
+// Changed from employee_id to id
+if (!isset($data['id'])) {
+    echo json_encode(['success' => false, 'message' => 'Unique ID is required']);
     exit;
 }
 
-$employee_id = $data['employee_id'];
+$db_id = $data['id'];
 
-// Delete record
-$sql = "DELETE FROM dbo.it_onboarding WHERE employee_id = ?";
-$params = [$employee_id];
+// ✅ Delete record using the unique ID
+$sql = "DELETE FROM dbo.it_onboarding WHERE id = ?";
+$params = [$db_id];
 
 $stmt = sqlsrv_query($conn, $sql, $params);
 
 if ($stmt === false) {
-    echo json_encode(['success' => false, 'message' => 'Failed to delete record']);
+    // Helpful for debugging: return the actual SQL error
+    $errors = sqlsrv_errors();
+    echo json_encode(['success' => false, 'message' => 'Failed to delete: ' . json_encode($errors)]);
     exit;
 }
 

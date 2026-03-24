@@ -2,29 +2,24 @@
 session_start();
 include('db_connect.php');
 
-// Handle search and filters
 $search = $_GET['search'] ?? '';
 $year = $_GET['year'] ?? '';
 $month = $_GET['month'] ?? '';
 
-// Base query
 $query = "SELECT * FROM itequip_inventory.toner_drum_checkout WHERE 1=1";
 $params = [];
 
-// Search filter
 if (!empty($search)) {
     $query .= " AND (model LIKE ? OR color LIKE ? OR type LIKE ? OR requested_by LIKE ?)";
     $search_param = '%' . $search . '%';
     $params = array_merge($params, array_fill(0, 4, $search_param));
 }
 
-// Year filter
 if (!empty($year)) {
     $query .= " AND YEAR(checkout_date) = ?";
     $params[] = $year;
 }
 
-// Month filter
 if (!empty($month)) {
     $query .= " AND MONTH(checkout_date) = ?";
     $params[] = $month;
@@ -35,7 +30,6 @@ $query .= " ORDER BY checkout_date DESC";
 $stmt = sqlsrv_prepare($conn, $query, $params);
 sqlsrv_execute($stmt);
 
-// Distinct years
 $years_query = "SELECT DISTINCT YEAR(checkout_date) AS year FROM itequip_inventory.toner_drum_checkout WHERE checkout_date IS NOT NULL ORDER BY year DESC";
 $years_result = sqlsrv_query($conn, $years_query);
 ?>
@@ -50,16 +44,16 @@ $years_result = sqlsrv_query($conn, $years_query);
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         .table-wrapper {
-    max-height: calc(100vh - 200px); /* Adjust depending on header/footer height */
-    overflow-y: auto; /* vertical scroll when needed */
-    overflow-x: auto; /* horizontal scroll when needed */
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    overflow-x: auto;
     border: 3px solid #ddd;
     width: 100%;
     box-sizing: border-box;
 }
 
 table#equipmentTable {
-    min-width: 1000px; /* Prevents the table from shrinking too small */
+    min-width: 1000px;
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
@@ -72,7 +66,7 @@ table#equipmentTable {
             padding: 10px;
             text-align: left;
             word-wrap: break-word;
-            border: .5px solid #ccc; /* adds grid lines */
+            border: .5px solid #ccc;
         }
 
 table#equipmentTable th {
@@ -97,27 +91,42 @@ table#equipmentTable th {
         table#equipmentTable th:nth-child(3),
         table#equipmentTable th:nth-child(4),
         table#equipmentTable th:nth-child(5),
-        table#equipmentTable td:nth-child(5),
-        table#equipmentTable th:nth-child(6) {
+        table#equipmentTable th:nth-child(6),
+        table#equipmentTable th:nth-child(7),
+        table#equipmentTable th:nth-child(8),
+        table#equipmentTable th:nth-child(9) {
             text-align: center;
         }
+
+        table#equipmentTable td:nth-child(1),
+        table#equipmentTable td:nth-child(2),
+        table#equipmentTable td:nth-child(3),
+        table#equipmentTable td:nth-child(5),
+        table#equipmentTable td:nth-child(6),
+        table#equipmentTable td:nth-child(7),
+        table#equipmentTable td:nth-child(8),
+        table#equipmentTable td:nth-child(9) {
+            text-align: center;
+        }       
 
         table#equipmentTable td:nth-child(4) {
             text-align: right;
         }
 
-        th:nth-child(1), td:nth-child(1) { width: 5%; }
-        th:nth-child(2), td:nth-child(2) { width: 5%; }
+        th:nth-child(1), td:nth-child(1) { width: 10%; }
+        th:nth-child(2), td:nth-child(2) { width: 10%; }
         th:nth-child(3), td:nth-child(3) { width: 5%; }
-        th:nth-child(4), td:nth-child(4) { width: 5%; }
+        th:nth-child(4), td:nth-child(4) { width: 10%; }
         th:nth-child(5), td:nth-child(5) { width: 5%; }
         th:nth-child(6), td:nth-child(6) { width: 10%; }
+        th:nth-child(7), td:nth-child(7) { width: 10%; }
+        th:nth-child(8), td:nth-child(8) { width: 20%; }
+        th:nth-child(9), td:nth-child(9) { width: 10%; }
 
     </style>
 </head>
 <body>
 
-<!-- Sidebar -->
 <div class="sidebar">
     <img src="images/vertiv-logo1.png" alt="Vertiv Logo" class="logo">
     <hr class="sidebar-divider">
@@ -165,7 +174,10 @@ table#equipmentTable th {
                     <th>Type</th>
                     <th>Checkout Date</th>
                     <th>Quantity Checked Out</th>
+                    <th>Deployed By</th>
+                    <th>Site</th>
                     <th>Requested By</th>
+                    <th>Taken From</th>
                 </tr>
             </thead>
             <tbody>
@@ -180,7 +192,10 @@ table#equipmentTable th {
                             <td><?= htmlspecialchars($row['type']) ?></td>
                             <td><?= $row['checkout_date'] ? $row['checkout_date']->format('M-d-Y') : '' ?></td>
                             <td><?= htmlspecialchars($row['quantity_checked_out']) ?></td>
+                            <td><?php echo htmlspecialchars($row['deployed_by'] ?? ''); ?></td>
+                            <td><?= htmlspecialchars($row['site_location']) ?></td>
                             <td><?= htmlspecialchars($row['requested_by']) ?></td>
+                            <td><?= htmlspecialchars($row['storage_location']) ?></td>
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>

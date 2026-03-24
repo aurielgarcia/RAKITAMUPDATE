@@ -372,6 +372,10 @@ window.onclick = e => {
 // ----- CREATE TABLE ROW -----
 function createTableRow(data) {
   const row = document.createElement('tr');
+
+  // ✅ STORE ID HERE
+  row.dataset.id = data.id;
+
   row.innerHTML = `
     <td>${data.name}</td>
     <td>${data.employee_id}</td>
@@ -422,9 +426,13 @@ document.getElementById('addJoinerForm').addEventListener('submit', e => {
   .then(result => {
     if (result.success) {
       alert('Joiner added successfully.');
+
+      data.id = result.id; // ✅ FIX HERE
+
       if (['New Joiner','Existing - Approved','Now Onboarding'].includes(data.onboarding_status)) {
         tbody.appendChild(createTableRow(data));
       }
+
       form.reset();
       closeModal('addJoinerModal');
     } else alert('Error: ' + result.message);
@@ -469,7 +477,16 @@ row.querySelector('.onboarded-btn').addEventListener('click', () => {
   const confirmOnboard = confirm("Are you sure you want to Onboard this new joiner?");
     if (!confirmOnboard) return;
 
+    const id = row.dataset.id;
+
+    // ✅ SAFETY CHECK (STEP 3)
+    if (!id || id === "undefined") {
+        alert("Error: Missing ID. Please reload the page.");
+        return;
+    }
+
     const data = {
+        id: parseInt(id), // ✅ force integer
         name: row.cells[0].textContent,
         employee_id: row.cells[1].textContent,
         role: row.cells[2].textContent,

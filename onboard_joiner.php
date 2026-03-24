@@ -11,18 +11,18 @@ $joiner = $data['joiner'] ?? null;
 $response = ['success' => false, 'message' => ''];
 
 try {
-    if (!$joiner) {
-        throw new Exception('No joiner data received.');
+    if (!$joiner || !isset($joiner['id'])) {
+        throw new Exception('No joiner data or ID received.');
     }
 
-    // ✅ 1. Update dbo.it_onboarding to Onboarded
+    // ✅ 1. Update onboarding using ID (MAIN KEY)
     $sqlUpdate = "UPDATE dbo.it_onboarding
                   SET onboarding_status = 'Onboarded'
-                  WHERE employee_id = ?";
-    $stmtUpdate = sqlsrv_query($conn, $sqlUpdate, [$joiner['employee_id']]);
+                  WHERE id = ?";
+    $stmtUpdate = sqlsrv_query($conn, $sqlUpdate, [$joiner['id']]);
+
     if ($stmtUpdate === false) {
-        $errors = sqlsrv_errors();
-        throw new Exception('Update it_onboarding failed: ' . json_encode($errors, JSON_PRETTY_PRINT));
+        throw new Exception('Update it_onboarding failed: ' . json_encode(sqlsrv_errors(), JSON_PRETTY_PRINT));
     }
 
     // ✅ 2. Clean joining date
@@ -31,43 +31,47 @@ try {
         $joining_date = null;
     }
 
-    // ✅ 3. Check if record exists in itequip_inventory.users_profile
-    $sqlCheck = "SELECT COUNT(*) AS cnt FROM itequip_inventory.users_profile WHERE employee_id = ?";
-    $stmtCheck = sqlsrv_query($conn, $sqlCheck, [$joiner['employee_id']]);
+    // ✅ 3. Check using ID
+    $sqlCheck = "SELECT COUNT(*) AS cnt 
+                 FROM itequip_inventory.users_profile 
+                 WHERE id = ?";
+    $stmtCheck = sqlsrv_query($conn, $sqlCheck, [$joiner['id']]);
+
     if ($stmtCheck === false) {
-        $errors = sqlsrv_errors();
-        throw new Exception('Check failed: ' . json_encode($errors, JSON_PRETTY_PRINT));
+        throw new Exception('Check failed: ' . json_encode(sqlsrv_errors(), JSON_PRETTY_PRINT));
     }
 
     $row = sqlsrv_fetch_array($stmtCheck, SQLSRV_FETCH_ASSOC);
-    if (!$row) {
-        throw new Exception('Check query returned no rows.');
-    }
 
-    // ✅ 4. Update or insert into users_profile
+    // ✅ 4. Update or Insert
     if ($row['cnt'] > 0) {
-        // Update
+
         $sqlUpdateProfile = "UPDATE itequip_inventory.users_profile
-                             SET name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?
-                             WHERE employee_id = ?";
+                             SET employee_id = ?, name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?
+                             WHERE id = ?";
+
         $params = [
+            $joiner['employee_id'],
             $joiner['name'],
             $joiner['role'],
             $joiner['department'],
             $joiner['manager_name'],
             $joining_date,
-            $joiner['employee_id']
+            $joiner['id']
         ];
+
         $stmtProfile = sqlsrv_query($conn, $sqlUpdateProfile, $params);
+
         if ($stmtProfile === false) {
-            $errors = sqlsrv_errors();
-            throw new Exception('Update users_profile failed: ' . json_encode($errors, JSON_PRETTY_PRINT));
+            throw new Exception('Update users_profile failed: ' . json_encode(sqlsrv_errors(), JSON_PRETTY_PRINT));
         }
+
     } else {
-        // Insert
+
         $sqlInsertProfile = "INSERT INTO itequip_inventory.users_profile
             (employee_id, name, role, department, manager_name, joining_date)
             VALUES (?, ?, ?, ?, ?, ?)";
+
         $params = [
             $joiner['employee_id'],
             $joiner['name'],
@@ -76,10 +80,11 @@ try {
             $joiner['manager_name'],
             $joining_date
         ];
+
         $stmtInsert = sqlsrv_query($conn, $sqlInsertProfile, $params);
+
         if ($stmtInsert === false) {
-            $errors = sqlsrv_errors();
-            throw new Exception('Insert into users_profile failed: ' . json_encode($errors, JSON_PRETTY_PRINT));
+            throw new Exception('Insert failed: ' . json_encode(sqlsrv_errors(), JSON_PRETTY_PRINT));
         }
     }
 
@@ -91,3 +96,4 @@ try {
 
 header('Content-Type: application/json');
 echo json_encode($response);
+?>

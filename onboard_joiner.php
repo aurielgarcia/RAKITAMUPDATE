@@ -15,77 +15,65 @@ try {
         throw new Exception('No joiner data or ID received.');
     }
 
-    // ✅ 1. Update onboarding using ID (MAIN KEY)
+    // ✅ CLEAN joining date
+    $joining_date = trim($joiner['joining_date'] ?? '');
+    if ($joining_date === '' || strtoupper($joining_date) === 'TBC') {
+        $joining_date = null;
+    }
+
+    // =====================================================
+    // ✅ NEW: CHECK DUPLICATE EMPLOYEE_ID BEFORE ONBOARDING
+    // =====================================================
+    $sqlCheckDuplicate = "SELECT COUNT(*) AS cnt 
+                          FROM itequip_inventory.users_profile 
+                          WHERE employee_id = ?";
+    
+    $stmtCheckDuplicate = sqlsrv_query($conn, $sqlCheckDuplicate, [$joiner['employee_id']]);
+
+    if ($stmtCheckDuplicate === false) {
+        throw new Exception('Duplicate check failed: ' . json_encode(sqlsrv_errors(), JSON_PRETTY_PRINT));
+    }
+
+    $rowDuplicate = sqlsrv_fetch_array($stmtCheckDuplicate, SQLSRV_FETCH_ASSOC);
+
+    if ($rowDuplicate['cnt'] > 0) {
+        // ❌ STOP IF DUPLICATE FOUND
+        throw new Exception('This employee ID is already onboarded!');
+    }
+
+    // =====================================================
+    // ✅ 1. UPDATE onboarding status
+    // =====================================================
     $sqlUpdate = "UPDATE dbo.it_onboarding
                   SET onboarding_status = 'Onboarded'
                   WHERE id = ?";
+    
     $stmtUpdate = sqlsrv_query($conn, $sqlUpdate, [$joiner['id']]);
 
     if ($stmtUpdate === false) {
         throw new Exception('Update it_onboarding failed: ' . json_encode(sqlsrv_errors(), JSON_PRETTY_PRINT));
     }
 
-    // ✅ 2. Clean joining date
-    $joining_date = trim($joiner['joining_date'] ?? '');
-    if ($joining_date === '' || strtoupper($joining_date) === 'TBC') {
-        $joining_date = null;
-    }
+    // =====================================================
+    // ✅ 2. INSERT INTO users_profile (NO NEED TO CHECK ID NOW)
+    // =====================================================
+    $sqlInsertProfile = "INSERT INTO itequip_inventory.users_profile
+        (employee_id, name, role, department, manager_name, joining_date, status)
+        VALUES (?, ?, ?, ?, ?, ?, 'Active')";
 
-    // ✅ 3. Check using ID
-    $sqlCheck = "SELECT COUNT(*) AS cnt 
-                 FROM itequip_inventory.users_profile 
-                 WHERE id = ?";
-    $stmtCheck = sqlsrv_query($conn, $sqlCheck, [$joiner['id']]);
+    $params = [
+        $joiner['employee_id'],
+        $joiner['name'],
+        $joiner['role'],
+        $joiner['department'],
+        $joiner['manager_name'],
+        $joining_date
+    ];
 
-    if ($stmtCheck === false) {
-        throw new Exception('Check failed: ' . json_encode(sqlsrv_errors(), JSON_PRETTY_PRINT));
-    }
+    $stmtInsert = sqlsrv_query($conn, $sqlInsertProfile, $params);
 
-    $row = sqlsrv_fetch_array($stmtCheck, SQLSRV_FETCH_ASSOC);
-
-    // ✅ 4. Update or Insert
-    if ($row['cnt'] > 0) {
-
-        $sqlUpdateProfile = "UPDATE itequip_inventory.users_profile
-                             SET employee_id = ?, name = ?, role = ?, department = ?, manager_name = ?, joining_date = ?, status = 'Active'
-                             WHERE id = ?";
-
-        $params = [
-            $joiner['employee_id'],
-            $joiner['name'],
-            $joiner['role'],
-            $joiner['department'],
-            $joiner['manager_name'],
-            $joining_date,
-            $joiner['id']
-        ];
-
-        $stmtProfile = sqlsrv_query($conn, $sqlUpdateProfile, $params);
-
-        if ($stmtProfile === false) {
-            throw new Exception('Update users_profile failed: ' . json_encode(sqlsrv_errors(), JSON_PRETTY_PRINT));
-        }
-
-    } else {
-
-        $sqlInsertProfile = "INSERT INTO itequip_inventory.users_profile
-            (employee_id, name, role, department, manager_name, joining_date, status)
-            VALUES (?, ?, ?, ?, ?, ?, 'Active')";
-
-        $params = [
-            $joiner['employee_id'],
-            $joiner['name'],
-            $joiner['role'],
-            $joiner['department'],
-            $joiner['manager_name'],
-            $joining_date
-        ];
-
-        $stmtInsert = sqlsrv_query($conn, $sqlInsertProfile, $params);
-
-        if ($stmtInsert === false) {
-            throw new Exception('Insert failed: ' . json_encode(sqlsrv_errors(), JSON_PRETTY_PRINT));
-        }
+    if ($stmtInsert === false) {
+        throw new Exception('Insert failed: ' . json_encode(sqlsrv_errors(), JSON_PRETTY_PRINT));
     }
 
     $response['success'] = true;

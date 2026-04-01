@@ -283,6 +283,7 @@
         <option value="Engineering">Engineering</option>
         <option value="SolidWorks">SolidWorks</option>
         <option value="Standard">Standard</option>
+        <option value="N/A">N/A</option>
       </select>
 
       <!-- FIXED: name="onboarding_status" -->
@@ -338,6 +339,7 @@
         <option value="Engineering">Engineering</option>
         <option value="SolidWorks">SolidWorks</option>
         <option value="Standard">Standard</option>
+        <option value="N/A">N/A</option>
       </select>
 
       <!-- FIXED: name="onboarding_status" -->

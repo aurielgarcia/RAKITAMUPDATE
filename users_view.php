@@ -311,8 +311,13 @@ while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
             display: inline; }
 
         .add-user-btn {
-            background: #27ae60; color: white; padding: 10px 20px; border: none;
-            border-radius: 5px; font-size: 1em; cursor: pointer; float: right;
+            background: #bcecd0; color: white; padding: 10px 20px; border: none;
+            border-radius: 5px; font-size: 1em; cursor: pointer; float: right;.
+            pointer-events: none; /* 🔥 makes it unclickable */
+        }
+
+        .add-user-btn:hover {
+            background: #1e8348; color: white; cursor: not-allowed;
         }
 
 
@@ -485,7 +490,7 @@ form {
 <?php endif; ?>
 
 
-<button class="add-user-btn" onclick="document.getElementById('addUserModal').style.display='block'">Add User</button>
+<button class="add-user-btn" disabled onclick="document.getElementById('addUserModal').style.display='block'">Add User</button>
 
 <div class="search-bar-container">
     <div class="search-bar">

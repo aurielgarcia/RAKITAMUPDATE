@@ -34,6 +34,21 @@ function getTotalInStock($conn, $type, $statuses) {
     }
     return $total;
 }
+
+function getNewJoinerCount($conn, $pcType) {
+    $sql = "SELECT COUNT(*) AS count
+            FROM dbo.it_onboarding
+            WHERE pc_type = ?
+            AND onboarding_status = 'New Joiner'";
+
+    $params = [$pcType];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+
+    if ($stmt === false) return 0;
+
+    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+    return $row ? $row['count'] : 0;
+}
 ?>
 
 <!DOCTYPE html>
@@ -247,6 +262,7 @@ hr {
                 <tr>
                     <th>Device Type</th>
                     <th>Required Quantity</th>
+                    <th>Add Required Quantity</th>
                     <th>In Stock Quantity</th>
                     <th>Requires PO</th>
                     <th>Action</th>
@@ -263,12 +279,16 @@ hr {
                         $stmt = sqlsrv_query($conn, $sql, $params);
                         $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
                         $requiredQty = $row ? $row['required_quantity'] : 0;
+                        $onboardinguserQty = getNewJoinerCount($conn, $type);
                     ?>
                     <tr>
                         <td><?= htmlspecialchars($type) ?></td>
+                        <td data-value="<?= $onboardinguserQty ?>">
+                        <?= $onboardinguserQty > 0 ? $onboardinguserQty : '–' ?>
+                        </td>
                         <td class="required-qty"><?= htmlspecialchars($requiredQty) ?></td>
                         <td><?= $inStockTotal ?></td>
-                        <td><?= $requiredQty - $inStockTotal ?></td>
+                        <td><?= max(0, $onboardinguserQty + $requiredQty - $inStockTotal) ?></td>
                         <td><button class="btn btn-sm btn-primary edit-btn">Edit</button></td>
                     </tr>
                 <?php endforeach; ?>
@@ -302,17 +322,18 @@ document.querySelectorAll('.edit-btn').forEach(button => {
         const row = this.closest('tr');
         const deviceType = row.cells[0].textContent.trim();
         const qtyCell = row.querySelector('.required-qty');
-        const inStockCell = row.cells[2];
-        const poCell = row.cells[3];
+        const inStockCell = row.cells[3]; 
+        const poCell = row.cells[4];      
 
         if (qtyCell.querySelector('input')) {
             // Save value
             const input = qtyCell.querySelector('input');
+            const onboardingQty = parseInt(row.cells[1].dataset.value) || 0;
             const requiredQty = parseInt(input.value) || 0;
             const inStockQty = parseInt(inStockCell.textContent) || 0;
 
             qtyCell.textContent = requiredQty;
-            poCell.textContent = requiredQty - inStockQty;
+            poCell.textContent = Math.max(0, onboardingQty + requiredQty - inStockQty);
             this.textContent = 'Edit';
 
             // AJAX to save to database
@@ -326,8 +347,10 @@ document.querySelectorAll('.edit-btn').forEach(button => {
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status !== 'success') {
-                    alert('❌ Error saving to database.');
+                if (data.status === 'success') {
+                    alert('Saved successfully');
+                } else {
+                    alert('Error saving to database.');
                     console.error(data.message);
                 }
             })

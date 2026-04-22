@@ -494,7 +494,7 @@
             Export to WP822 XML
             </button>
 
-            <button id="exportBtn2"  onclick="window.location.href='export_grandstream.php'">
+            <button id="exportBtn2"  onclick="window.location.href='export_grandstreamw820.php'">
             Export to WP820 XML
             </button>
 

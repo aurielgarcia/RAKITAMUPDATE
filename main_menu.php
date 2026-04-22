@@ -248,6 +248,11 @@ $username = $_SESSION['username'];
       <img src="images/knowledge_based.png" alt="IT Knowledge">
       IT KNOWLEDGE BASED
     </a>
+
+    <a href="grandstream.php" class="menu-box">
+      <img src="images/grandstream.png" alt="GRANDSTREAM">
+      GRANDSTREAM PHONEBOOK
+    </a>
     
   </div>
 </div>

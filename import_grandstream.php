@@ -13,40 +13,37 @@ try {
 
     $xmlFile = $_FILES['xmlfile']['tmp_name'];
 
-    if (!file_exists($xmlFile)) {
-        throw new Exception("File not found.");
-    }
-
-    // Load XML safely
     libxml_use_internal_errors(true);
     $xml = simplexml_load_file($xmlFile);
 
     if ($xml === false) {
-        throw new Exception("Invalid XML format.");
+        throw new Exception("Invalid XML file.");
     }
 
     $inserted = 0;
 
     foreach ($xml->Contact as $contact) {
 
-        // Extract safely
-        $firstname   = trim((string)$contact->FirstName);
-        $lastname    = trim((string)$contact->LastName);
-        $phonenumber = trim((string)$contact->Phone->phonenumber);
+        // ✅ ONLY GET WHAT YOU NEED
+        $firstname = trim((string)$contact->FirstName);
+        $lastname  = trim((string)$contact->LastName);
 
-        // Skip empty rows
+        // Safe phone extraction
+        $phonenumber = isset($contact->Phone->phonenumber)
+            ? trim((string)$contact->Phone->phonenumber)
+            : '';
+
+        // Skip empty required fields
         if (!$firstname || !$phonenumber) continue;
 
-        // 🔒 OPTIONAL: prevent duplicates
+        // OPTIONAL: prevent duplicates
         $checkSql = "SELECT COUNT(*) as count FROM dbo.grandstream_entry WHERE phonenumber = ?";
         $checkStmt = sqlsrv_query($conn, $checkSql, [$phonenumber]);
         $checkRow = sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC);
 
-        if ($checkRow['count'] > 0) {
-            continue; // skip duplicate
-        }
+        if ($checkRow['count'] > 0) continue;
 
-        // Insert
+        // ✅ INSERT ONLY 3 FIELDS (others auto-generated)
         $sql = "INSERT INTO dbo.grandstream_entry
                 (firstname, lastname, phonenumber, entry_date, entry_time)
                 VALUES (?, ?, ?, GETDATE(), CONVERT(time, GETDATE()))";

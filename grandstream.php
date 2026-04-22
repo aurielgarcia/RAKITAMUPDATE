@@ -168,6 +168,25 @@
             background: #1a681a;
         }
 
+        #exportBtn2 {
+            background: #a52c2c;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center; /* center text/icon */
+        }
+
+        #exportBtn2:hover {
+            background: #7a3030;
+        }
+
         /* Table Design */
         .table-wrapper {
             background: white;
@@ -394,6 +413,62 @@
         box-shadow: 0 0 0 4px rgba(44, 62, 80, 0.05);
     }
 
+/* Import CSS */
+
+    .import-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid #eef0f2;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    width: fit-content;
+}
+
+/* Hide default ugly file input */
+#importFile {
+    display: none;
+}
+
+#xmlFile {
+    display: none;
+}
+
+/* Custom file button */
+.file-label {
+    background: #f1f3f5;
+    color: #2c3e50;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+    border: 1px solid #dcdde1;
+}
+
+.file-label:hover {
+    background: #e9ecef;
+}
+
+/* Import button */
+.import-btn {
+    background: #2c3e50;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.import-btn:hover {
+    background: #1a252f;
+}
+
     </style>
 </head>
 <body>
@@ -418,7 +493,22 @@
             <button id="exportBtn"  onclick="window.location.href='export_grandstream.php'">
             Export to WP822 XML
             </button>
-</div>
+
+            <button id="exportBtn2"  onclick="window.location.href='export_grandstream.php'">
+            Export to WP820 XML
+            </button>
+
+    </div>
+        <div class="import-container">
+            <label for="xmlFile" class="file-label" id="fileLabel">
+                Choose XML File
+            </label>
+            <input type="file" id="xmlFile" />
+
+            <button class="import-btn" onclick="importXML()">
+                Import XML
+            </button>
+        </div>
 
         <div class="right-actions">
             <div class="search-wrapper">
@@ -515,6 +605,44 @@
 
 <script>
 const tbody = document.querySelector('#stagingTable tbody');
+
+
+
+//import Functions
+
+document.getElementById("xmlFile").addEventListener("change", function () {
+    const fileName = this.files[0]?.name || "Choose XML File";
+    document.getElementById("fileLabel").textContent = fileName;
+});
+
+function importXML() {
+    const fileInput = document.getElementById('xmlFile');
+
+    if (!fileInput.files.length) {
+        alert("Please select a file");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('xmlfile', fileInput.files[0]);
+
+    fetch('import_grandstream.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(result => {
+        alert(result.message);
+
+        if (result.success) {
+            loadEntries(); // refresh table
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Import failed");
+    });
+}
 
 // Helper Functions
 function formatTime12h(timeStr) {

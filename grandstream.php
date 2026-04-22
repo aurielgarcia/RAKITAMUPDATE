@@ -124,6 +124,11 @@
         top: 1px;
         }
 
+        .left-actions {
+            display: flex;
+            gap: 10px; /* increase space */
+        }
+
         /* Buttons */
         #newEntryBtn {
             background: #2c3e50;
@@ -137,10 +142,30 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            justify-content: center;
         }
 
         #newEntryBtn:hover {
             background: #1a252f;
+        }
+
+            #exportBtn {
+            background: #38913f;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center; /* center text/icon */
+        }
+
+        #exportBtn:hover {
+            background: #1a681a;
         }
 
         /* Table Design */
@@ -389,10 +414,11 @@
     <div class="utility-bar">
         <div class="left-actions">
             <button id="newEntryBtn"><i class="fas fa-plus"></i> New Entry</button>
-            <button onclick="window.location.href='export_grandstream.php'">
-    Export XML
-</button>
-        </div>
+
+            <button id="exportBtn"  onclick="window.location.href='export_grandstream.php'">
+            Export to WP822 XML
+            </button>
+</div>
 
         <div class="right-actions">
             <div class="search-wrapper">

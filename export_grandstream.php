@@ -36,7 +36,7 @@ while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
     $phone = $contact->addChild('Phone');
     $phone->addAttribute('type', 'Work');
     $phone->addChild('phonenumber', $row['phonenumber']);
-    $phone->addChild('accountindex', 2);
+    $phone->addChild('accountindex', 1);
 
     $contact->addChild('Primary', 0);
     $contact->addChild('Mail');
